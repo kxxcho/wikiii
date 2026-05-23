@@ -1,467 +1,1853 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>KXXCHO RELATION MAKER</title>
-<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
-
 <style>
-    body { font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif; background-color: #f4f6f8; display: flex; justify-content: center; padding: 20px; color: #333; margin: 0; }
-    .maker-wrap { display: flex; gap: 20px; width: 100%; max-width: 1400px; flex-wrap: wrap; align-items: flex-start; }
-    
-    /* 패널 설정 */
-    .panel-left { flex: 1; min-width: 350px; background: white; border-radius: 12px; padding: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); max-height: 90vh; overflow-y: auto; }
-    .panel-right { flex: 2; min-width: 400px; background: white; border-radius: 12px; padding: 0; box-shadow: 0 4px 15px rgba(0,0,0,0.05); overflow: auto; display: flex; flex-direction: column; }
-    
-    h2.title-h2 { color: #008275; margin-top: 0; font-weight: 900; text-align: center; margin-bottom: 25px; }
-    .section-head { font-size: 15px; font-weight: bold; border-bottom: 2px solid #333; padding-bottom: 5px; margin: 25px 0 15px 0; }
-    
-    .input-grp { margin-bottom: 12px; }
-    .input-grp label { display: block; font-size: 12px; font-weight: bold; margin-bottom: 4px; color: #555; }
-    .input-grp input[type="text"], .input-grp textarea, .input-grp select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-family: inherit; font-size: 13px; transition: border 0.2s; }
-    .input-grp input[type="text"]:focus, .input-grp textarea:focus { border-color: #008275; outline: none; }
-    .input-grp textarea { resize: vertical; height: 60px; }
-
-    .btn-add { background: #e0f2f1; color: #008275; border: none; padding: 10px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; display: block; width: 100%; margin-top: 10px; transition: 0.2s; }
-    .btn-add:hover { background: #c8e6e5; }
-    
-    .btn-download { background: #262626; color: white; border: none; padding: 15px; border-radius: 8px; font-weight: bold; cursor: pointer; width: calc(100% - 40px); margin: 20px; font-size: 16px; transition: 0.2s; }
-    .btn-download:hover { background: #008275; }
-
-    .preview-header { background: #008275; color: white; padding: 12px 20px; font-weight: bold; font-size: 14px; }
-    #preview-area { padding: 30px; background: #e5e5e5; overflow-y: auto; max-height: 80vh; position: relative; display: flex; justify-content: center; }
-
-    .dynamic-box { background: #fafbfc; border: 1px solid #ccc; padding: 15px; border-radius: 8px; margin-bottom: 15px; position: relative; }
-    .btn-del-box { position: absolute; top: 10px; right: 10px; background: #ff4d4f; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; cursor: pointer; font-weight: bold; }
-
-    .kxx-sticker, .draggable-img { cursor: move; }
-    .kxx-side-img, .kxx-bb-img { overflow: hidden; }
-
-    /* 모달 기본 (결과물 저장용) */
-    .modal-overlay {
-        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(0,0,0,0.85); z-index: 9999;
-        display: none; justify-content: center; align-items: center; flex-direction: column;
+    /* 1. 각주 컨테이너 */
+    .footnote-container {
+        display: inline-block;
+        position: relative;
+        cursor: pointer;
     }
-    .modal-content { max-width: 90%; max-height: 75vh; border-radius: 12px; overflow: hidden; background: transparent; }
-    .modal-text { color: white; margin-bottom: 20px; font-weight: bold; text-align: center; font-size: 15px; letter-spacing: -0.5px; }
-    .modal-close { margin-top: 20px; padding: 12px 35px; background: #008275; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px; }
 
-    /* 시작 설명 팝업 모달 스타일 (요청 원본 유지) */
-    .welcome-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 99999; padding: 15px; box-sizing: border-box; }
-    .welcome-modal { 
-        background: white; padding: 25px; border-radius: 16px; width: 480px; max-width: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.15); animation: modalFadeIn 0.3s ease; 
-        display: flex; flex-direction: column; max-height: 85vh; 
+    .footnote-text {
+        font-size: 0.8em;
+        color: #0275d8;
+        vertical-align: super;
+        font-weight: normal;
     }
-    .welcome-title { font-size: 20px; font-weight: 900; color: #008275; text-align: center; margin-bottom: 15px; display: flex; align-items: center; justify-content: center; gap: 6px; flex-shrink: 0; }
-    .welcome-content { 
-        font-size: 13px; line-height: 1.6; color: #444; margin-bottom: 15px; text-align: justify; 
-        overflow-y: auto; 
-        padding-right: 5px;
-    }    
-    .welcome-content ul { padding-left: 20px; margin: 8px 0; }
-    .welcome-content li { margin-bottom: 6px; }
-    .btn-modal-close { background: #008275; color: white; border: none; padding: 12px; width: 100%; border-radius: 8px; font-weight: bold; font-size: 14px; cursor: pointer; flex-shrink: 0; }
-    .btn-modal-close:hover { background: #00665c; }
-    @keyframes modalFadeIn { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
 
-    @media screen and (max-width: 600px) {
-        .welcome-title { font-size: 17px !important; }
-        .welcome-content { font-size: 11.5px !important; line-height: 1.5 !important; }
-        .welcome-modal { padding: 18px !important; }
+/* 2. 팝업 박스 (글자 가둠 + 높이 자동 조절 최종본) */
+.footnote-content {
+    display: none; 
+    position: fixed !important; 
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important; 
+    
+    background-color: #ffffff !important;
+    color: #373a3c !important;
+    border: 1px solid #cccccc !important;
+    padding: 20px !important; 
+    
+    /* 💥 텍스트 가둠 핵심 설정 💥 */
+    width: 280px !important; 
+    max-width: 85vw !important; 
+    height: auto !important; /* 높이가 글자 길이에 맞춰 늘어남 */
+    min-height: min-content !important; /* 내용물만큼 최소 높이 보장 */
+    box-sizing: border-box !important; /* 패딩 때문에 박스 안 터지게 고정 */
+    
+    /* 💥 줄바꿈 설정 💥 */
+    white-space: normal !important; /* 줄바꿈 허용 */
+    word-break: break-all !important; /* 박스 폭 넘으면 무조건 다음 줄 */
+    overflow-wrap: break-word !important; 
+    text-align: justify !important; /* 좌우 정렬 */
+    
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3) !important;
+    font-size: 0.9em !important;
+    line-height: 1.6 !important;
+    z-index: 9999999 !important;
+}
+
+/* 마우스 올렸을 때만 보이게 */
+.footnote-container:hover .footnote-content {
+    display: block !important;
+}
+
+/* 숫자가 첫 줄에 예쁘게 붙게 함 */
+.fn-num { 
+    display: inline !important; 
+    color: #0275d8; 
+    font-weight: bold; 
+    margin-right: 5px; 
+}
+
+    .fn-close-hint {
+        display: block; margin-top: 15px; padding-top: 8px;
+        border-top: 1px solid #eee; font-size: 0.75em; color: #999; text-align: center;
     }
+
+    .footnote-content b { color: #000000; }
+
+    /* 마우스 올리면 보이게 (block으로 보여줘야 텍스트가 안 깨짐) */
+    .footnote-container:hover .footnote-content {
+        display: block !important;
+    }
+
+    .footnote-content::after {
+        display: none !important;
+    }
+  
+  
+  
 </style>
-</head>
-<body>
 
-<div class="welcome-modal-overlay" id="welcomeModal">
-    <div class="welcome-modal">
-        <div class="welcome-title">KXXCHOWIKI 에디터 가이드</div>
-        <div class="welcome-content">
-               
-            그간 티스토리 코드로 배포를 했으나 이래저래 어려움이 많아 가볍게 수정이 가능한 에디터를 새로 제작해보았습니다! ⁃ ⩊ ⁃  최하단 카피라이트 삭제, 에디터 자작 발언 등의 행위는 당연히 금지하고 있습니다 ㅜ.ㅜ  이를 제외한 원본을 훼손하지 않는 선에서 일부 수정은 허용하고 있으며 (추가 표 삽입, 자간 조절 등 문의 없이 코드 수정 사용 가능) 이외 문의는 언제나 <a href="https://asked.kr/kxxchox" target="_blank" style="color: #008275; text-decoration: none;">https://asked.kr/kxxchox </a>를 통해 주시면 빠른 회신 및 업데이트 하도록 하겠습니다!
-<br><br>
-            <span style="color: #888;">에디터 사용 금지 드림) 사카모토 데이즈 ㅡ 나구모 요이치 </span><br><br>
-               만들고 인용으로 자랑해주시면 정말... 좋아합니다<br>
-               매번 인용으로 자랑해주시는 분들께 감사하고 있어요  (⸝⸝๑  ̫ ๑⸝⸝⸝) 
-            <hr style="border:0; border-top:1px solid #eee; margin:12px 0;">
-            <b>특수 태그 사용 안내</b>
-            <ul>
-                <li><b>각주 달기</b>: 문장 뒤에 <code>[각주:설명내용]</code>을 적으면 실시간으로 각주 번호가 부여되며 팝업 및 하단 목록이 자동 생성됩니다.</li>
-                <li><b>인용구 틀</b>: 대사나 강조 구절은 <code>[인용구:원문대사|번역설명]</code> 태그를 사용해 인용구 틀을 씌울 수 있습니다.</li>
-                <li><b>사진 삽입</b>: 문단 내 사진 업로드 후 원하는 위치에 <code>[사진:1]</code>, <code>[사진:2]</code>를 기입하세요. 공백 없이 붙여 쓰면 <code>[사진:1][사진:2]</code> 가로 배열로 정렬됩니다.</li>
-                <li><b>커미션 출처</b>: 사진 뒤에 파이프 기호를 붙여 <code>[사진:1|출처내용]</code>을 쓰면 사진 밑에 ⓒ 기호와 함께 출처가 표기됩니다.</li>
+<div style="font-family: sans-serif; color: #373a3c; width: 95%; max-width: 800px; margin: 0 auto; line-height: 1.4; box-sizing: border-box;">
+
+    <h1 style="font-size: 2.2em; border-bottom: 2px solid #ccc; padding-bottom: 5px; margin-bottom: 5px; font-weight: bold; letter-spacing: -1px; word-break: keep-all;">도쿄 소녀 네버 다이</h1>
+    <div style="text-align: right; font-size: 0.8em; color: #666; margin-bottom: 10px;">최근 수정 시각: 2026-06-01 07:09:20</div>
+
+    <div style="border: 1px solid #ccc; padding: 5px 10px; background-color: #fff; margin-bottom: 20px; font-size: 0.9em; word-break: break-all;">
+        <span style="font-weight: bold;">분류:</span> 
+        <a href="https://namu.wiki/w/%EC%82%AC%EC%B9%B4%EB%AA%A8%ED%86%A0%20%EB%8D%B0%EC%9D%B4%EC%A6%88" target="_blank" style="color: #0275d8; text-decoration: none;">사카모토 데이즈</a> / 
+        <a href="https://namu.wiki/w/%EC%82%AC%EC%B9%B4%EB%AA%A8%ED%86%A0%20%EB%8D%B0%EC%9D%B4%EC%A6%88/%EB%93%B1%EC%9E%A5%EC%9D%B8%EB%AC%BC" target="_blank" style="color: #0275d8; text-decoration: none;">등장인물</a> 
+    </div>
+
+    <div style="border: 1px solid #bbb; padding: 10px; text-align: center; margin-bottom: 12px; background-color: #fff;">
+        <div style="font-weight: bold; margin-bottom: 3px; font-size: 0.9em;">[ 펼치기 ・ 접기 ]</div>
+        <details>
+            <summary style="font-size: 0.75em; cursor: pointer; list-style: none; outline: none; white-space: nowrap; letter-spacing: -0.8px;">
+                <span style="color: #373a3c;">PC 권장.</span> 
+                <span style="color: #00a000; font-weight: bold; text-decoration: underline;">열람 시 BGM 재생을 부탁드립니다.</span> (클릭)
+            </summary>
+            <div style="margin-top:10px; height: 45px; overflow: hidden; display: flex; justify-content: center;">
+                <iframe width="200" height="120" src="https://www.youtube.com/embed/r36LkzKG0nU?rel=0" frameborder="0" allow="autoplay; encrypted-media" style="border-radius: 8px;"></iframe>
+            </div>
+        </details>
+    </div>
+
+    <div style="border: 1px solid #bbb; margin-bottom: 25px;">
+        <div style="background-color: #f0ad4e; height: 4px;"></div>
+        <div style="padding: 10px 15px; text-align: center;">
+            <div style="font-size: 1em; font-weight: bold; margin-bottom: 3px;">문서에 <span style="color: #0275d8;">스포일러</span>가 포함되어 있습니다.</div>
+            <div style="font-size: 0.75em; color: #666;">이 문서가 설명하는 인물 등에 대한 반전 요소 등을 포함하고 있습니다.</div>
+        </div>
+    </div>
+
+    <div style="margin: 0 auto 20px auto; width: 91%; max-width: 450px; border: 2px solid #c0504d; font-size: 0.9em; background-color: #fff; box-sizing: border-box; position: relative;">
+        
+        <div style="background-color: #c0504d; color: white; text-align: center; padding: 10px 10px; border-bottom: 2px solid #c0504d;">
+            <div style="font-weight: 777; font-size: 1.8em; margin-bottom: 5px; line-height: 1.1;">카츠노 이루</div>
+
+          <ruby>勝乃<rt style="font-size: 0.6em;">かつの</rt></ruby> 
+                <ruby>漪<rt style="font-size: 0.6em;">い</rt></ruby><ruby>流<rt style="font-size: 0.6em;">る</rt></ruby> 
+                | katsuno Iru
+        </div>
+
+        <div style="padding: 5px; text-align: center; border-bottom: 2px solid #c0504d; background-color: #fff;">
+            <img src="https://i.postimg.cc/vT8wX3wc/무제34_20260222045900.png" style="width: 100%; height: auto; display: block; margin: 0 auto;" alt="카츠노 이루">
+        </div>
+
+        <table style="width: 100%; border-collapse: collapse; table-layout: fixed; margin: 0; padding: 0; border-style: hidden;">
+            <tr>
+                <td style="background-color: #c0504d; color: white; width: 30%; padding: 6px 4px; font-weight: bold; text-align: center; border: 1px solid #bbb;">이름</td>
+                <td style="padding: 6px 8px; border: 1px solid #bbb; word-break: break-all;">
+                    日 <b>카츠노 이루</b>
+                    <span class="footnote-container" tabindex="0">
+                        <span class="footnote-text">[1]</span>
+                        <span class="footnote-content">
+                            <span class="fn-num">[1]</span> 챗X피티의 도움을 받아 직접 지은 이름이다. 큰 뜻은 딱히 없다. 한국 이름과 일본 이름 모두 물결과 관련된 한자를 쓴다는 공통점이 있다. 우연의 일치인지 운명인지.
+                            <span class="fn-close-hint">닫으려면 바깥을 클릭하세요</span>
+                        </span>
+                    </span> (勝乃 漪流)<br>韓 <b>채이로</b> (蔡利澇)
+                </td>
+            </tr>
+            <tr>
+                <td style="background-color: #c0504d; color: white; padding: 6px 4px; font-weight: bold; text-align: center; border: 1px solid #bbb;">나이</td>
+                <td style="padding: 6px 8px; border: 1px solid #bbb;">
+                    17세
+                    <span class="footnote-container" tabindex="0">
+                        <span class="footnote-text">[2]</span>
+                        <span class="footnote-content">
+                            <span class="fn-num">[2]</span> 나구모와의 첫만남 기준
+                            <span class="fn-close-hint">닫으려면 바깥을 클릭하세요</span>
+                        </span>
+                    </span> → 20세
+                    <span class="footnote-container" tabindex="0">
+                        <span class="footnote-text">[3]</span>
+                        <span class="footnote-content">
+                            <span class="fn-num">[3]</span> 세기의 킬러전 시점 기준
+                            <span class="fn-close-hint">닫으려면 바깥을 클릭하세요</span>
+                        </span>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td style="background-color: #c0504d; color: white; padding: 6px 4px; font-weight: bold; text-align: center; border: 1px solid #bbb;">생일</td>
+                <td style="padding: 6px 8px; border: 1px solid #bbb;">2001년 9월 20일</td>
+            </tr>
+          
+            <tr>
+                <td style="background-color: #c0504d; color: white; padding: 6px 4px; font-weight: bold; text-align: center; border: 1px solid #bbb;">출생</td>
+                <td style="padding: 6px 8px; border: 1px solid #bbb;"> <a href="https://namu.wiki/w/%ED%95%B4%EC%9A%B4%EB%8C%80%EA%B5%AC" target="_blank" style="color: #0275d8; text-decoration: none;">대한민국 부산광역시 해운대구</a></td>
+            </tr>
+          
+            <tr>
+                <td style="background-color: #c0504d; color: white; padding: 6px 4px; font-weight: bold; text-align: center; border: 1px solid #bbb;">신체</td>
+                <td style="padding: 6px 8px; border: 1px solid #bbb;">
+                    161cm, 4nkg
+                    <span class="footnote-container" tabindex="0">
+                        <span class="footnote-text">[4]</span>
+                        <span class="footnote-content">
+                            <span class="fn-num">[4]</span> 소녀의 몸무게는 함부로 밝히는 것이 아니라며 공식 프로필에서는 제외하였으나 아마 40kg 초반대로 예상된다. 사실 키 또한 정확한 키는 160.8cm이나 반올림으로 기재하여 161cm로 표기하였다.
+                            <span class="fn-close-hint">닫으려면 바깥을 클릭하세요</span>
+                        </span>
+                    </span>
+                </td>
+            </tr>
+          
+          <tr>
+                <td style="background-color: #c0504d; color: white; padding: 6px 4px; font-weight: bold; text-align: center; border: 1px solid #bbb;">가족</td>
+                <td style="padding: 6px 8px; border: 1px solid #bbb;">
+                   부모님 
+                    <span class="footnote-container" tabindex="0">
+                        <span class="footnote-text">[5]</span>
+                        <span class="footnote-content">
+                            <span class="fn-num">[5]</span> 절연. 외가와는 14살 이후 연락이 끊긴 상태였다. 이후 일본으로 건너와서는 부모님에 대한 내용은 불명.
+                            <span class="fn-close-hint">닫으려면 바깥을 클릭하세요</span>
+                        </span>
+                    </span>
+                  <br>
+                   <span style="color: #aaa; text-decoration: line-through;">나구모 요이치</span> 
+                  <span class="footnote-container" tabindex="0">
+                        <span class="footnote-text">[6]</span>
+                        <span class="footnote-content">
+                            <span class="fn-num">[6]</span> 임시 보호자로 등록되어 서류상 가족으로 등록되어 있다. 물론 가짜 신분으로 등록되어 있으며 전학 절차를 밟으면서 불가피하게 새로 만든 위조 문서이다. 실제 법적 효력은 당연히 없고 같이 사는 동거인에서 친밀도가 쌓였으니 종종 가족이라고 하는 편이기도. 
+                            <span class="fn-close-hint">닫으려면 바깥을 클릭하세요</span>
+                        </span>
+                  </span>
+                </td>
+            </tr>
+          
+            <tr>
+                <td style="background-color: #c0504d; color: white; padding: 6px 4px; font-weight: bold; text-align: center; border: 1px solid #bbb;">학력</td>
+                <td style="padding: 6px 8px; border: 1px solid #bbb; font-size: 1em;"> 
+                    도쿄 신주쿠 고등학교<br>
+                    도쿄 히로오 가쿠엔 고등학교
+                    <span class="footnote-container" tabindex="0">
+                        <span class="footnote-text">[7]</span>
+                        <span class="footnote-content">
+                            <span class="fn-num">[7]</span> 나구모와 살게 된 이후 신주쿠에서 미나토구로 이동하게 되어 불가피하게 전학 수속을 밟았다. 사립 학교이며 보호자란에는 나구모가 올라가 있다. 아마 가짜 신분으로 카츠노의 혈연 관계로 등록한 듯. 
+                            <span class="fn-close-hint">닫으려면 바깥을 클릭하세요</span>
+                        </span>
+                    </span>
+                    <br>
+                    도쿄대학교 의학부 1학년
+                    <span class="footnote-container" tabindex="0">
+                        <span class="footnote-text">[8]</span>
+                        <span class="footnote-content">
+                            <span class="fn-num">[8]</span> 줄곧 공대를 지망해왔으며 이후 도쿄 대학교 이공학부에 원서를 접수하게 된다. 그러나 꿈꿨던 공대는 떨어지고 의대에 붙었다고... 학비는 나구모가 지원해 주기로 합의했다. <span style="color: #aaa; text-decoration: line-through;">한 번 보호자는 영원한 보호자</span>
+                            <span class="fn-close-hint">닫으려면 바깥을 클릭하세요</span>
+                        </span>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td style="background-color: #c0504d; color: white; padding: 6px 4px; font-weight: bold; text-align: center; border: 1px solid #bbb;">好</td>
+                <td style="padding: 6px 8px; border: 1px solid #bbb;">미남, 
+                멀티툴<span class="footnote-container" tabindex="0">
+                        <span class="footnote-text">[9]</span>
+                        <span class="footnote-content">
+                            <span class="fn-num">[9]</span>정말 특이하게도 나구모의 무기인 멀티툴을 좋아한다. 정확한 이유를 밝히려면 논문을 써야할지도 모른다며 자세하게 말은 못하지만 철제 특유의 금속 재질과 유려한 라인 그리고 자잘한 흠집이 좋다고 한다. <span style="color: #aaa; text-decoration: line-through;">철제콤</span>
+                            <span class="fn-close-hint">닫으려면 바깥을 클릭하세요</span>
+                        </span>
+                    </span>
+               , 커스터드 푸딩</td>
+            </tr>
+            <tr>
+                <td style="background-color: #c0504d; color: white; padding: 6px 4px; font-weight: bold; text-align: center; border: 1px solid #bbb;">嫌</td>
+                <td style="padding: 6px 8px; border: 1px solid #bbb;">
+                    연패, 인공적인 딸기
+                    <span class="footnote-container" tabindex="0">
+                        <span class="footnote-text">[10]</span>
+                        <span class="footnote-content">
+                            <span class="fn-num">[10]</span> 생딸기는 좋아하지만 딸기 시럽이나 딸기 사탕, 그리도 딸기 우유와 같은 인위적인 향은 싫어한다. 맡으면 멀미할 것 같다는 것이 큰 이유. 
+                            <span class="fn-close-hint">닫으려면 바깥을 클릭하세요</span>
+                        </span>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td style="background-color: #c0504d; color: white; padding: 6px 4px; font-weight: bold; text-align: center; border: 1px solid #bbb; border-bottom: none;">취미</td>
+                <td style="padding: 6px 8px; border: 1px solid #bbb; border-bottom: none;">롤, 스도쿠, 짝사랑</td>
+            </tr>
+        </table>
+
+        <details style="margin: 0; padding: 0; border-top: 2px solid #c0504d;">
+            <summary style="background-color: #c0504d; padding: 10px; text-align: center; cursor: pointer; font-size: 1em; color: white; list-style: none; outline: none; font-weight: bold;">▼ 기타 정보 (접기/펴기)</summary>
+            <div style="padding: 10px; font-size: 1em; color: #444; background-color: #fff;">언젠가는 뭘 넣을 예정임</div>
+        </details>
+    </div>
+</div>
+
+<br>
+
+<div style="display: inline-block; border: 1px solid #d5d5d5; background: #fff; padding: 15px; font-family: sans-serif; min-width: 250px; line-height: 1.8;">
+    
+    <details open class="toc-details">
+        
+        <summary style="list-style: none; outline: none; cursor: pointer; display: flex; justify-content: space-between; align-items: center;">
+            <style>
+                summary::-webkit-details-marker { display: none; }
+                /* V 모양 애니메이션: 닫히면 반시계방향으로 90도 돌아서 > 모양이 됨! */
+                details.toc-details:not([open]) summary .toc-arrow { transform: rotate(-90deg); }
+                details.toc-details[open] summary .toc-arrow { transform: rotate(0deg); }
+            </style>
+            
+            <span style="font-size: 1rem; font-weight: bold;">목차</span>
+            <span class="toc-arrow" style="font-size: 0.8rem; color: #888; display: inline-block; transition: transform 0.3s ease-in-out;">∨</span>
+        </summary>
+
+        <div style="font-size: 0.9rem; color: #333; margin-top: 10px;">
+            <ul style="list-style: none; padding: 0; margin: 0;">
+                <li><a href="#s-1" style="color: #0275d8; text-decoration: none;">1.</a> 개요</li>
+                
+                <li>
+                    <a href="#s-2" style="color: #0275d8; text-decoration: none;">2.</a> 특징
+                    <ul style="list-style: none; padding-left: 20px; margin: 0;">
+                        <li><a href="#s-2.1" style="color: #0275d8; text-decoration: none;">2.1.</a> 외모</li>
+                        <li>
+                            <a href="#s-2.2" style="color: #0275d8; text-decoration: none;">2.2.</a> 성격
+                            <ul style="list-style: none; padding-left: 20px; margin: 0;">
+                                <li><a href="#s-2.2.1" style="color: #0275d8; text-decoration: none;">2.2.1.</a> 성가신 여자아이</li>
+                                <li><a href="#s-2.2.2" style="color: #0275d8; text-decoration: none;">2.2.2.</a> 뺑이의 악마 재림</li>
+                                <li><a href="#s-2.2.3" style="color: #0275d8; text-decoration: none;">2.2.3.</a> 노빠꾸 노필터링 </li>
+                                <li><a href="#s-2.2.4" style="color: #0275d8; text-decoration: none;">2.2.4.</a> 럭키? 언럭키!</li>
+                            </ul>
+                        </li>
+                        <li>
+                            <a href="#s-2.3" style="color: #0275d8; text-decoration: none;">2.3.</a> 非日常 속의 일상
+                            <ul style="list-style: none; padding-left: 20px; margin: 0;">
+                                <li><a href="#s-2.3.1" style="color: #0275d8; text-decoration: none;">2.3.1.</a> 키미노 나마에와</li>
+                                <li><a href="#s-2.3.2" style="color: #0275d8; text-decoration: none;">2.3.2.</a> 韓과 日의 경계선</li>
+                                <li><a href="#s-2.3.3" style="color: #0275d8; text-decoration: none;">2.3.3.</a> 미남은 죄가 없어</li>
+                            </ul>
+                        </li>
+                    </ul>
+                </li>
+              
+                <li>
+                    <a href="#s-3" style="color: #0275d8; text-decoration: none;">3.</a> 작중 행적
+                    <ul style="list-style: none; padding-left: 20px; margin: 0;">
+                        <li><a href="#s-3.1" style="color: #0275d8; text-decoration: none;">3.1.</a> 소제목 입력</li>
+                        <li><a href="#s-3.2" style="color: #0275d8; text-decoration: none;">3.2.</a> 소제목 입력</li>
+                        <li>
+                            <a href="#s-3.3" style="color: #0275d8; text-decoration: none;">3.3.</a> 소제목 입력
+                            <ul style="list-style: none; padding-left: 20px; margin: 0;">
+                                <li><a href="#s-3.3.1" style="color: #0275d8; text-decoration: none;">3.3.1.</a> 소제목 입력</li>
+                                <li><a href="#s-3.3.2" style="color: #0275d8; text-decoration: none;">3.3.2.</a> 소제목 입력</li>
+                                <li><a href="#s-3.3.3" style="color: #0275d8; text-decoration: none;">3.3.3.</a> 소제목 입력</li>
+                                <li><a href="#s-3.3.4" style="color: #0275d8; text-decoration: none;">3.3.4.</a> 소제목 입력</li>
+                                <li><a href="#s-3.3.5" style="color: #0275d8; text-decoration: none;">3.3.5.</a> 소제목 입력</li>
+                                <li><a href="#s-3.3.6" style="color: #0275d8; text-decoration: none;">3.3.6.</a> 소제목 입력</li>
+                                <li><a href="#s-3.3.7" style="color: #0275d8; text-decoration: none;">3.3.7.</a> 소제목 입력</li>
+                                <li><a href="#s-3.3.8" style="color: #0275d8; text-decoration: none;">3.3.8.</a> 소제목 입력</li>
+                            </ul>
+                        </li>
+                        <li><a href="#s-3.4" style="color: #0275d8; text-decoration: none;">3.4.</a> 소제목 입력</li>
+                        <li><a href="#s-3.5" style="color: #0275d8; text-decoration: none;">3.5.</a> 소제목 입력</li>
+                        <li><a href="#s-3.6" style="color: #0275d8; text-decoration: none;">3.6.</a> 소제목 입력</li>
+                    </ul>
+                </li> 
+
+                <li>
+                    <a href="#s-4" style="color: #0275d8; text-decoration: none;">4.</a> 능력 및 전투력 
+                    <ul style="list-style: none; padding-left: 20px; margin: 0;">
+                        <li><a href="#s-4.1" style="color: #0275d8; text-decoration: none;">4.1.</a> 럭키와 언럭키의 不可測
+                           <ul style="list-style: none; padding-left: 20px; margin: 0;">
+                               <li><a href="#s-4.1.1" style="color: #0275d8; text-decoration: none;">4.1.1.</a> 불운 축적과 행운 발현</li>
+                               <li><a href="#s-4.1.2" style="color: #0275d8; text-decoration: none;">4.1.2.</a> 럭키 언럭키 총량 법칙</li>
+                           </ul>
+                        </li>                
+                        <li><a href="#s-4.2" style="color: #0275d8; text-decoration: none;">4.2.</a> 정(正)의 궤적</li>
+                        <li><a href="#s-4.3" style="color: #0275d8; text-decoration: none;">4.3.</a> 변(變)의 조준</li>
+                    </ul>
+                </li>
+                
+                <li><a href="#s-5" style="color: #0275d8; text-decoration: none;">5.</a> 인간 관계</li> 
+              
+                <li>
+                    <a href="#s-6" style="color: #0275d8; text-decoration: none;">6.</a> 기타
+                    <ul style="list-style: none; padding-left: 20px; margin: 0;">
+                        <li><a href="#s-6.1" style="color: #0275d8; text-decoration: none;">6.1.</a> 작품 내</li>
+                        <li><a href="#s-6.2" style="color: #0275d8; text-decoration: none;">6.2.</a> 작품 외</li>
+                    </ul>
+                </li>
             </ul>
         </div>
-        <button class="btn-modal-close" onclick="closeWelcomeModal()">에디터 시작하기</button>
-    </div>
+    </details>
 </div>
 
-<div class="maker-wrap">
-    <div class="panel-left">
-        <h2 class="title-h2">RELATION MAKER</h2>
-
-        <div class="section-head">0. 전체 설정 & 스티커 꾸미기</div>
-        <div class="input-grp"><label>페어명 (RELATIONSHIP 등)</label><input type="text" id="in-main-title" value="페어명을 적어주세요" oninput="updatePreview()"></div>
-        <div class="input-grp"><label>중앙 한 줄 요약</label><input type="text" id="in-mid-sub" value="한 줄 요약 텍스트" oninput="updatePreview()"></div>
-        <div class="input-grp"><label>중앙 기본 서술 (크기 고정)</label><textarea id="in-mid-desc" oninput="updatePreview()">이 곳에 페어의 상세한 관계 서술이나 추가 설명을 적어주세요. 하단 텍스트 영역의 높이는 고정되어 있으니 내용 길이를 조절해 주세요.</textarea></div>
-        
-        <div style="background: #e8f5e9; padding: 15px; border-radius: 8px; border: 1px solid #c8e6e9; margin-top: 15px;">
-            <div style="font-size: 12px; font-weight: bold; color:#008275; margin-bottom: 8px;">[ 🎀 SD 스티커 꾸미기 ]</div>
-            <div class="input-grp"><label>투명화(PNG) 스티커 업로드 (여러 장 가능)</label><input type="file" accept="image/*" onchange="addSticker(this)" multiple></div>
-        </div>
-
-        <div class="section-head">1. 상단 인물 설정 (좌/우)</div>
-        <div style="display: flex; flex-direction: column; gap: 20px;">
-            <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; border: 1px solid #eee;">
-                <div style="font-size: 13px; font-weight: bold; color:#008275; margin-bottom: 12px;">[왼쪽 인물]</div>
-                <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-                    <div style="flex: 1;"><label style="font-size:11px;">캐치프레이즈 색</label><input type="color" id="in-l-catch-color" value="#008275" oninput="updatePreview()" style="width:100%; height:30px; padding:0; border:1px solid #ccc; border-radius:4px; cursor:pointer;"></div>
-                    <div style="flex: 1;"><label style="font-size:11px;">이름 색상</label><input type="color" id="in-l-txt" value="#333333" oninput="updatePreview()" style="width:100%; height:30px; padding:0; border:1px solid #ccc; border-radius:4px; cursor:pointer;"></div>
-                    <div style="flex: 1;"><label style="font-size:11px;">설명 색상</label><input type="color" id="in-l-desc-color" value="#444444" oninput="updatePreview()" style="width:100%; height:30px; padding:0; border:1px solid #ccc; border-radius:4px; cursor:pointer;"></div>
-                </div>
-                <div class="input-grp"><label>캐치프레이즈</label><input type="text" id="in-l-catch" value="최강의 킬러" oninput="updatePreview()"></div>
-                <div class="input-grp"><label>이름</label><input type="text" id="in-l-name" value="캐릭터 A" oninput="updatePreview()"></div>
-                <div class="input-grp"><label>설명</label><textarea id="in-l-desc" oninput="updatePreview()">왼쪽 인물의 간단한 설명</textarea></div>
-                <div class="input-grp"><label>메인 사진</label><input type="file" accept="image/*" onchange="handleImg(this, 'imgL')"></div>
-            </div>
-
-            <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; border: 1px solid #eee;">
-                <div style="font-size: 13px; font-weight: bold; color:#008275; margin-bottom: 12px;">[오른쪽 인물]</div>
-                <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-                    <div style="flex: 1;"><label style="font-size:11px;">캐치프레이즈 색</label><input type="color" id="in-r-catch-color" value="#ff4d4f" oninput="updatePreview()" style="width:100%; height:30px; padding:0; border:1px solid #ccc; border-radius:4px; cursor:pointer;"></div>
-                    <div style="flex: 1;"><label style="font-size:11px;">이름 색상</label><input type="color" id="in-r-txt" value="#333333" oninput="updatePreview()" style="width:100%; height:30px; padding:0; border:1px solid #ccc; border-radius:4px; cursor:pointer;"></div>
-                    <div style="flex: 1;"><label style="font-size:11px;">설명 색상</label><input type="color" id="in-r-desc-color" value="#444444" oninput="updatePreview()" style="width:100%; height:30px; padding:0; border:1px solid #ccc; border-radius:4px; cursor:pointer;"></div>
-                </div>
-                <div class="input-grp"><label>캐치프레이즈</label><input type="text" id="in-r-catch" value="최고의 파트너" oninput="updatePreview()"></div>
-                <div class="input-grp"><label>이름</label><input type="text" id="in-r-name" value="캐릭터 B" oninput="updatePreview()"></div>
-                <div class="input-grp"><label>설명</label><textarea id="in-r-desc" oninput="updatePreview()">오른쪽 인물의 간단한 설명</textarea></div>
-                <div class="input-grp"><label>메인 사진</label><input type="file" accept="image/*" onchange="handleImg(this, 'imgR')"></div>
-            </div>
-        </div>
-
-        <div class="section-head">2. 중앙 관계 화살표 설정</div>
-        <div style="display: flex; flex-direction: column; gap: 15px; margin-bottom: 10px;">
-            <div style="border: 1px dashed #ccc; padding: 15px; border-radius: 6px;">
-                <div style="font-size: 11px; font-weight: bold; color: #555; margin-bottom: 8px;">[ 좌측 ➔ 우측 화살표 ]</div>
-                <div class="input-grp"><label>화살표 색</label><input type="color" id="in-a1-color" value="#008275" style="width:50px; height:25px; padding:0;" oninput="updatePreview()"></div>
-                <div class="input-grp"><label>위 (느끼는 감정)</label><input type="text" id="in-a1-emo" value="신뢰, 애정" oninput="updatePreview()"></div>
-                <div class="input-grp"><label>아래 (호칭)</label><input type="text" id="in-a1-call" value="너, 파트너" oninput="updatePreview()"></div>
-            </div>
-            
-            <div style="border: 1px dashed #ccc; padding: 15px; border-radius: 6px;">
-                <div style="font-size: 11px; font-weight: bold; color: #555; margin-bottom: 8px;">[ 우측 ⬅ 좌측 화살표 ]</div>
-                <div class="input-grp"><label>화살표 색</label><input type="color" id="in-a2-color" value="#ff4d4f" style="width:50px; height:25px; padding:0;" oninput="updatePreview()"></div>
-                <div class="input-grp"><label>위 (느끼는 감정)</label><input type="text" id="in-a2-emo" value="경계, 라이벌" oninput="updatePreview()"></div>
-                <div class="input-grp"><label>아래 (호칭)</label><input type="text" id="in-a2-call" value="저 녀석" oninput="updatePreview()"></div>
-            </div>
-        </div>
-
-        <div class="section-head">3. 하단 상세 정보 박스</div>
-        <div id="bottom-boxes-container"></div>
-        <button class="btn-add" onclick="addBottomBox()">+ 하단 상세 박스 추가하기</button>
-
-    </div>
-
-    <div class="panel-right">
-        <div class="preview-header">실시간 미리보기 ⁃ ⩊ ⁃</div>
-        <div id="preview-area"></div>
-        <button class="btn-download" onclick="captureMockup()">📸 이미지로 저장하기</button>
-    </div>
-</div>
-
-<div class="modal-overlay" id="result-modal">
-    <div class="modal-text">👇 이미지를 <b>길게 꾹~</b> 눌러서<br>'사진 앱에 저장' 하세요! 👇</div>
-    <img id="result-img" class="modal-content" src="" style="background: white;">
-    <button class="modal-close" onclick="closeResultModal()">닫기</button>
-</div>
-
-<script>
-    let images = {
-        imgL: 'https://via.placeholder.com/400x500/eee/aaa?text=Left+Photo',
-        imgR: 'https://via.placeholder.com/400x500/eee/aaa?text=Right+Photo'
-    };
-    
-    let stickers = []; 
-    let bottomBoxes = [];
-    let imgTransforms = {}; 
-
-    function getTransform(id) {
-        if (!imgTransforms[id]) imgTransforms[id] = { x: 0, y: 0, scale: 1 };
-        return imgTransforms[id];
-    }
-
-    let activeDrag = null;
-    let dragStart = {x: 0, y: 0};
-
-    document.addEventListener('mousedown', (e) => {
-        if (e.target.classList.contains('kxx-sticker')) {
-            activeDrag = { type: 'sticker', id: e.target.getAttribute('data-stk-id') };
-            e.preventDefault();
-        } else if (e.target.classList.contains('draggable-img')) {
-            activeDrag = { type: 'image', id: e.target.getAttribute('data-img-id') };
-            let tf = getTransform(activeDrag.id);
-            dragStart = { x: e.clientX - tf.x, y: e.clientY - tf.y };
-            e.preventDefault();
-        }
-    });
-
-    document.addEventListener('mousemove', (e) => {
-        if (!activeDrag) return;
-        if (activeDrag.type === 'sticker') {
-            const captureCard = document.getElementById('capture-card');
-            const rect = captureCard.getBoundingClientRect();
-            let stk = stickers.find(s => s.id === activeDrag.id);
-            if (stk) {
-                stk.x = ((e.clientX - rect.left) / rect.width) * 100;
-                stk.y = ((e.clientY - rect.top) / rect.height) * 100;
-                let el = document.querySelector(`[data-stk-id="${activeDrag.id}"]`);
-                if(el) { el.style.left = stk.x + '%'; el.style.top = stk.y + '%'; }
-            }
-        } else if (activeDrag.type === 'image') {
-            let tf = imgTransforms[activeDrag.id];
-            tf.x = e.clientX - dragStart.x;
-            tf.y = e.clientY - dragStart.y;
-            let el = document.querySelector(`[data-img-id="${activeDrag.id}"]`);
-            if(el) { el.style.transform = `translate(${tf.x}px, ${tf.y}px) scale(${tf.scale})`; }
-        }
-    });
-
-    document.addEventListener('mouseup', () => { activeDrag = null; });
-
-    document.addEventListener('dblclick', (e) => {
-        if (e.target.classList.contains('kxx-sticker')) {
-            let id = e.target.getAttribute('data-stk-id');
-            stickers = stickers.filter(s => s.id !== id);
-            updatePreview();
-        }
-    });
-
-    document.addEventListener('wheel', (e) => {
-        if (e.target.classList.contains('kxx-sticker')) {
-            e.preventDefault();
-            let id = e.target.getAttribute('data-stk-id');
-            let stk = stickers.find(s => s.id === id);
-            if (stk) {
-                stk.w += e.deltaY > 0 ? -10 : 10;
-                if (stk.w < 20) stk.w = 20;
-                e.target.style.width = stk.w + 'px';
-            }
-        } else if (e.target.classList.contains('draggable-img')) {
-            e.preventDefault();
-            let id = e.target.getAttribute('data-img-id');
-            let tf = getTransform(id);
-            tf.scale *= e.deltaY > 0 ? 0.9 : 1.1;
-            e.target.style.transform = `translate(${tf.x}px, ${tf.y}px) scale(${tf.scale})`;
-        }
-    }, { passive: false });
-
-    function handleImg(input, key) {
-        const file = input.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function(e) { 
-                images[key] = e.target.result; 
-                imgTransforms[key] = { x: 0, y: 0, scale: 1 }; 
-                updatePreview(); 
-            };
-            reader.readAsDataURL(file);
-        }
-    }
-
-    function addSticker(input) {
-        Array.from(input.files).forEach(file => {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                stickers.push({ id: 'stk-' + Date.now() + Math.random(), src: e.target.result, x: 50, y: 50, w: 100 });
-                updatePreview();
-            };
-            reader.readAsDataURL(file);
-        });
-        input.value = ""; 
-    }
-
-    function addBottomBox() {
-        const id = 'bbox-' + Date.now() + Math.floor(Math.random() * 100);
-        images[id] = 'https://via.placeholder.com/300x300/eee/aaa?text=Photo';
-        imgTransforms[id] = { x: 0, y: 0, scale: 1 };
-        bottomBoxes.push(id);
-
-        const html = `
-            <div class="dynamic-box" id="${id}">
-                <button class="btn-del-box" onclick="removeBottomBox('${id}')">X</button>
-                <div class="input-grp"><label>제목</label><input type="text" class="bb-title" value="상세 제목" oninput="updatePreview()"></div>
-                <div class="input-grp"><label>부제목</label><input type="text" class="bb-sub" value="서브 타이틀" oninput="updatePreview()"></div>
-                <div class="input-grp" style="display:flex; gap:10px; align-items:center;">
-                    <div style="flex:1;"><label>태그 (첫번째는 AU고정)</label><input type="text" class="bb-tags" value="태그1, 태그2, 태그3" oninput="updatePreview()"></div>
-                    <div style="width:80px;"><label>태그 색상</label><input type="color" class="bb-tag-color" value="#008275" oninput="updatePreview()" style="height:35px; padding:0;"></div>
-                </div>
-                <div class="input-grp"><label>내용</label><textarea class="bb-desc" oninput="updatePreview()">상세 내용을 입력하세요.</textarea></div>
-                <div class="input-grp"><label>사진</label><input type="file" accept="image/*" onchange="handleImg(this, '${id}')"></div>
-            </div>`;
-        document.getElementById('bottom-boxes-container').insertAdjacentHTML('beforeend', html);
-        updatePreview();
-    }
-
-    function removeBottomBox(id) {
-        document.getElementById(id).remove();
-        bottomBoxes = bottomBoxes.filter(boxId => boxId !== id);
-        delete images[id];
-        delete imgTransforms[id];
-        updatePreview();
-    }
-
-    // 팝업 닫기 함수
-    function closeWelcomeModal() { document.getElementById('welcomeModal').style.display = 'none'; }
-    function closeResultModal() { document.getElementById('result-modal').style.display = 'none'; document.getElementById('result-img').src = ""; }
-
-    function generateFullHTML() {
-        const mainTitle = document.getElementById('in-main-title').value;
-        const midSub = document.getElementById('in-mid-sub').value;
-        const midDesc = document.getElementById('in-mid-desc').value.replace(/\n/g, '<br>');
-        
-        const a1Color = document.getElementById('in-a1-color').value;
-        const a1Emo = document.getElementById('in-a1-emo').value;
-        const a1Call = document.getElementById('in-a1-call').value;
-        const a2Color = document.getElementById('in-a2-color').value;
-        const a2Emo = document.getElementById('in-a2-emo').value;
-        const a2Call = document.getElementById('in-a2-call').value;
-
-        // html2canvas 버그 해결을 위해 SVG 색상 코드를 URL-safe로 인코딩!
-        const a1ColorEnc = encodeURIComponent(a1Color);
-        const a2ColorEnc = encodeURIComponent(a2Color);
-
-        const tfL = getTransform('imgL');
-        const tfR = getTransform('imgR');
-
-        const lCatchColor = document.getElementById('in-l-catch-color').value;
-        const lTxt = document.getElementById('in-l-txt').value;
-        const lDescColor = document.getElementById('in-l-desc-color').value;
-        const lCatch = document.getElementById('in-l-catch').value;
-        const lName = document.getElementById('in-l-name').value;
-        const lDesc = document.getElementById('in-l-desc').value.replace(/\n/g, '<br>');
-        
-        const rCatchColor = document.getElementById('in-r-catch-color').value;
-        const rTxt = document.getElementById('in-r-txt').value;
-        const rDescColor = document.getElementById('in-r-desc-color').value;
-        const rCatch = document.getElementById('in-r-catch').value;
-        const rName = document.getElementById('in-r-name').value;
-        const rDesc = document.getElementById('in-r-desc').value.replace(/\n/g, '<br>');
-
-        const stickersHtml = stickers.map(stk => 
-            `<img src="${stk.src}" data-stk-id="${stk.id}" class="kxx-sticker" style="position: absolute; left: ${stk.x}%; top: ${stk.y}%; width: ${stk.w}px; transform: translate(-50%, -50%); z-index: 10; filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.15));">`
-        ).join('');
-
-        let bottomBoxesHtml = '';
-        bottomBoxes.forEach(id => {
-            const el = document.getElementById(id);
-            if(!el) return;
-            const title = el.querySelector('.bb-title').value;
-            const sub = el.querySelector('.bb-sub').value;
-            const tags = el.querySelector('.bb-tags').value.split(',').map(t => t.trim()).filter(t => t);
-            const tagColor = el.querySelector('.bb-tag-color').value;
-            const desc = el.querySelector('.bb-desc').value.replace(/\n/g, '<br>');
-            const imgSrc = images[id];
-            const tfB = getTransform(id);
-
-            let tagsHtml = tags.map((t, i) => {
-                let bg = i === 0 ? "rgba(220, 220, 220, 0.6)" : tagColor;
-                let col = i === 0 ? "#555" : "#fff";
-                return `<span style="display: inline-block; padding: 4px 10px; margin: 0 6px 6px 0; font-size: 0.75em; font-weight: bold; color: ${col}; background: ${bg}; border-radius: 4px;">${t}</span>`;
-            }).join('');
-
-            bottomBoxesHtml += `
-            <div class="kxx-bb-wrap" style="display: flex; background: #fff; border: 1px solid #ccc; border-radius: 12px; overflow: hidden; margin-bottom: 20px;">
-                <div class="kxx-bb-img" style="flex: 0 0 30%; min-width: 140px; border-right: 1px solid #ccc; overflow: hidden;">
-                    <img src="${imgSrc}" data-img-id="${id}" class="draggable-img" style="width: 100%; height: 100%; object-fit: cover; transform: translate(${tfB.x}px, ${tfB.y}px) scale(${tfB.scale}); display: block;">
-                </div>
-                <div class="kxx-bb-content" style="flex: 1; padding: 25px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center;">
-                    <div style="font-size: 1.4em; font-weight: 900; color: #333; margin-bottom: 4px;">${title}</div>
-                    <div style="font-size: 0.9em; font-weight: bold; color: #888; margin-bottom: 15px;">${sub}</div>
-                    <div style="margin-bottom: 12px;">${tagsHtml}</div>
-                    <div style="font-size: 0.9em; line-height: 1.6; color: #444;">${desc}</div>
-                </div>
-            </div>`;
-        });
-
-        // 화살표 SVG가 html2canvas에서 위치를 잃지 않도록 img의 data uri로 변경
-        const finalHtml = `
-<div id="capture-card" style="font-family: 'Pretendard', sans-serif; width: 800px; min-width: 800px; margin: 0 auto; color: #333; box-sizing: border-box; background-color: transparent; padding: 30px; position: relative; overflow: hidden;">
-    ${stickersHtml}
-    <div class="kxx-top-wrap" style="display: flex; flex-direction: column; background: #fff; border: 1px solid #ccc; border-radius: 12px; overflow: hidden; margin-bottom: 20px; position: relative; z-index: 1;">
-        
-        <div style="display: flex; width: 100%; border-bottom: 1px solid #ccc; align-items: stretch;">
-            <div style="width: 28%; flex-shrink: 0; box-sizing: border-box; border-right: 1px solid #ccc; overflow: hidden; position: relative; aspect-ratio: 4/5; background: #fff;">
-                <img src="${images.imgL}" data-img-id="imgL" class="draggable-img" style="width: 100%; height: 100%; object-fit: cover; transform: translate(${tfL.x}px, ${tfL.y}px) scale(${tfL.scale}); display: block;">
-            </div>
-            <div style="width: 44%; flex-shrink: 0; box-sizing: border-box; padding: 20px; display: flex; flex-direction: column; justify-content: center; align-items: center; background: #fff;">
-                <div style="font-size: 2.1em; font-weight: 900; color: #333; letter-spacing: 0.5px; text-align: center; margin-bottom: 8px;">${mainTitle}</div>
-                <div style="font-size: 0.9em; font-weight: 500; color: #666; text-align: center; margin-bottom: 25px;">${midSub}</div>
+<div style="margin-top: 25px; width: 100%;">
+    <details open class="wiki-section">
+        <summary style="list-style: none; outline: none; cursor: pointer;">
+            <style>
+                summary::-webkit-details-marker { display: none; }
                 
-                <div style="display: flex; flex-direction: column; gap: 15px; width: 100%; max-width: 85%;">
-                    <div style="display: flex; flex-direction: column; text-align: left;">
-                        <div style="font-size: 0.72em; font-weight: bold; color: ${a1Color}; margin-bottom: 3px; padding-left: 5px;">${a1Emo}</div>
-                        <div style="width: 100%; height: 2px; background: ${a1Color}; position: relative;">
-                            <img src="data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='10' viewBox='0 0 8 10'%3E%3Cpolygon points='0,0 8,5 0,10' fill='${a1ColorEnc}'/%3E%3C/svg%3E" style="position: absolute; right: -1px; top: -4px; width: 8px; height: 10px; display: block; border: none; margin: 0; padding: 0;">
+                /* 접혔을 때 제목 반투명 */
+                details.wiki-section:not([open]) summary h2 { opacity: 0.5; transition: opacity 0.2s ease-in-out; }
+                details.wiki-section[open] summary h2 { opacity: 1; transition: opacity 0.2s ease-in-out; }
+                
+                /* 무조건 "⌵" 특수문자를 기준으로 설정 */
+                details.wiki-section summary h2::before {
+                    content: '⌵';
+                    display: inline-block;
+                    margin-right: 8px; /* 화살표랑 숫자 사이 간격 */
+                    font-size: 0.8em;
+                    color: #888;
+                    font-weight: bold;
+                    transition: transform 0.2s ease-in-out;
+                }
+                
+                /* 닫혀있을 때 화살표 회전 (> 모양으로 변신!) */
+                details.wiki-section:not([open]) summary h2::before {
+                    transform: rotate(-90deg);
+                }
+
+                /* 펼쳐졌을 때 화살표 원상복구 (원래 ⌵ 모양!) */
+                details.wiki-section[open] summary h2::before {
+                    transform: rotate(0deg);
+                }
+
+                /* 닫혀있을 때 [펼치기] 텍스트 표시 */
+                details.wiki-section:not([open]) summary h2 .toggle-text::after {
+                    content: '[펼치기]';
+                }
+
+                /* 열려있을 때 [접기] 텍스트 표시 */
+                details.wiki-section[open] summary h2 .toggle-text::after {
+                    content: '[접기]';
+                }
+            </style>
+            <h2 id="s-1" style="font-size: 1.6em; font-weight: bold; margin-bottom: 0; display: flex; align-items: center; border: none;">
+                <span style="color: #0275d8; margin-right: 6px;">1.</span> 개요
+                <span class="toggle-text" style="font-size: 0.55em; font-weight: normal; color: #0275d8; margin-left: auto; align-self: flex-end; margin-bottom: -1px;"></span>
+            </h2>
+            <hr style="border: 0; height: 1px; background: #ccc; margin: 5px 0 12px 0; width: 100%;">
+        </summary>
+
+        <div style="padding: 0 5px;">
+            <div style="margin-bottom: 15px; text-align: left;">
+                <img src="https://i.postimg.cc/wv0vXQ8n/무제47_20260319005306.png" alt="카츠노 이루 삽화" style="width: 100%; max-width: 320px; height: auto; border: 1px solid #ddd; border-radius: 8px;">
+                <p style="font-size: 0.8em; color: #888; margin-top: 5px; margin-left: 2px;"> ⓒ dokma <br>
+            </div>
+
+            <div style="padding: 0;">
+                <div style="border-left: 3px solid #CD7071; background-color: #f9f9f9; padding: 10px 15px; margin-bottom: 15px; font-family: 'Noto Sans JP', sans-serif; font-size: 0.85em; width: auto; max-width: 100%; box-sizing: border-box;">
+                    <details style="cursor: pointer;">
+                        <summary style="list-style: none; outline: none; line-height: 1.6;">
+                            <style>
+                                summary::-webkit-details-marker { display: none; }
+                            </style>
+                            あーもう！なっちゃんの せいで、ちこく なんだぞー！
+                        </summary>
+                        
+                        <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #ddd; color: #666;">
+                            아ー 진짜! 나쨩 때문에 지각이란 말야! 
                         </div>
-                        <div style="font-size: 0.72em; font-weight: bold; color: #777; margin-top: 3px; padding-left: 5px;">${a1Call}</div>
-                    </div>
-                    <div style="display: flex; flex-direction: column; text-align: right;">
-                        <div style="font-size: 0.72em; font-weight: bold; color: ${a2Color}; margin-bottom: 3px; padding-right: 5px;">${a2Emo}</div>
-                        <div style="width: 100%; height: 2px; background: ${a2Color}; position: relative;">
-                            <img src="data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='10' viewBox='0 0 8 10'%3E%3Cpolygon points='8,0 0,5 8,10' fill='${a2ColorEnc}'/%3E%3C/svg%3E" style="position: absolute; left: -1px; top: -4px; width: 8px; height: 10px; display: block; border: none; margin: 0; padding: 0;">
-                        </div>
-                        <div style="font-size: 0.72em; font-weight: bold; color: #777; margin-top: 3px; padding-right: 5px;">${a2Call}</div>
-                    </div>
+                    </details>
                 </div>
             </div>
-            <div style="width: 28%; flex-shrink: 0; box-sizing: border-box; border-left: 1px solid #ccc; overflow: hidden; position: relative; aspect-ratio: 4/5; background: #fff;">
-                <img src="${images.imgR}" data-img-id="imgR" class="draggable-img" style="width: 100%; height: 100%; object-fit: cover; transform: translate(${tfR.x}px, ${tfR.y}px) scale(${tfR.scale}); display: block;">
+
+            <div style="text-align: justify; word-break: break-all; line-height: 1.6; font-size: 1em;">
+                <p style="margin: 0 0 8px 0;">
+                    <a href="https://namu.wiki/w/%EC%82%AC%EC%B9%B4%EB%AA%A8%ED%86%A0%20%EB%8D%B0%EC%9D%B4%EC%A6%88" target="_blank" style="color: #0275d8; text-decoration: none;"><b>사카모토 데이즈</b></a><b>의 비공식 등장인물.</b><br><br> 킬러들이 판 치는 세계관과 다르게 킬러들과는 전혀 상관없는 <b>일반인</b>이다. 혈혈단신으로 한국에서 일본으로 건너와 신주쿠에 살고 있다가 <span style="color: #aaa; text-decoration: line-through;">킬러에게 주워져</span> 현재는 <a href="https://namu.wiki/w/%EB%82%98%EA%B5%AC%EB%AA%A8%20%EC%9A%94%EC%9D%B4%EC%B9%98" target="_blank" style="color: #0275d8; text-decoration: none;">나구모</a> 집에서 얹혀 살고 있다.
+                </p>
             </div>
         </div>
+    </details>
+</div>
 
-        <div style="display: flex; width: 100%; height: 160px; background: #fff; align-items: stretch;">
-            <div style="width: 28%; flex-shrink: 0; box-sizing: border-box; border-right: 1px solid #ccc; padding: 18px; overflow: hidden;">
-                <div style="font-size: 0.75em; font-weight: bold; color: ${lCatchColor}; margin-bottom: 3px;">${lCatch}</div>
-                <div style="font-size: 1.3em; font-weight: 900; margin-bottom: 10px; color: ${lTxt}; letter-spacing: -0.5px;">${lName}</div>
-                <div style="font-size: 0.85em; line-height: 1.5; color: ${lDescColor}; font-weight: 500;">${lDesc}</div>
-            </div>
-            <div style="width: 44%; flex-shrink: 0; box-sizing: border-box; padding: 20px; overflow: hidden;">
-                <div style="font-size: 0.85em; color: #444; line-height: 1.7; text-align: justify; word-break: keep-all; letter-spacing: -0.2px;">${midDesc}</div>
-            </div>
-            <div style="width: 28%; flex-shrink: 0; box-sizing: border-box; border-left: 1px solid #ccc; padding: 18px; overflow: hidden;">
-                <div style="font-size: 0.75em; font-weight: bold; color: ${rCatchColor}; margin-bottom: 3px;">${rCatch}</div>
-                <div style="font-size: 1.3em; font-weight: 900; margin-bottom: 10px; color: ${rTxt}; letter-spacing: -0.5px;">${rName}</div>
-                <div style="font-size: 0.85em; line-height: 1.5; color: ${rDescColor}; font-weight: 500;">${rDesc}</div>
-            </div>
+<div style="margin-top: 25px; width: 100%; font-family: sans-serif; color: #373a3c; line-height: 1.5; box-sizing: border-box;">
+
+    <style>
+        /* 각주 스타일 */
+        .footnote-container { position: relative; display: inline-block; cursor: pointer; color: #0275d8; }
+        .footnote-content { 
+            display: none; position: absolute; bottom: 120%; left: 50%; transform: translateX(-50%);
+            width: 280px; background: white; border: 1px solid #ddd; padding: 12px; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1); z-index: 1000; color: #333; font-size: 0.9em; line-height: 1.6;
+            text-align: left; border-radius: 4px;
+        }
+        .footnote-container:focus .footnote-content { display: block; }
+        .fn-num { color: #0275d8; font-weight: bold; margin-right: 5px; }
+        .fn-close-hint { display: block; margin-top: 8px; font-size: 0.8em; color: #999; text-align: center; border-top: 1px solid #eee; padding-top: 5px; }
+
+        /* 위키 섹션 접기/펼치기 공통 스타일 */
+        summary::-webkit-details-marker { display: none; }
+        
+        /* 제목 반투명 효과 (중첩 오류 방지를 위해 직접 자식만 타겟팅) */
+        details.wiki-section:not([open]) > summary > .wiki-heading { opacity: 0.5; transition: opacity 0.3s ease-in-out; }
+        details.wiki-section[open] > summary > .wiki-heading { opacity: 1; transition: opacity 0.3s ease-in-out; }
+        
+        /* "⌵" 특수문자 공통 설정 */
+        details.wiki-section > summary > .wiki-heading::before {
+            content: '⌵'; display: inline-block; margin-right: 8px; font-size: 0.8em; color: #888; font-weight: bold; transition: transform 0.3s ease-in-out;
+        }
+        
+        /* 닫혀있을 때 화살표 회전 (> 모양) */
+        details.wiki-section:not([open]) > summary > .wiki-heading::before { transform: rotate(-90deg); }
+        details.wiki-section[open] > summary > .wiki-heading::before { transform: rotate(0deg); }
+
+        /* [접기] / [펼치기] 텍스트 동적 변경 */
+        details.wiki-section:not([open]) > summary > .wiki-heading > .toggle-text::after { content: '[펼치기]'; }
+        details.wiki-section[open] > summary > .wiki-heading > .toggle-text::after { content: '[접기]'; }
+    </style>
+
+    <details open class="wiki-section">
+        <summary style="list-style: none; outline: none; cursor: pointer;">
+            <h2 id="s-2" class="wiki-heading" style="font-size: 1.6em; font-weight: bold; margin-bottom: 0; display: flex; align-items: center; border: none;">
+                <span style="color: #0275d8; margin-right: 6px;">2.</span> 특징
+                <span class="toggle-text" style="font-size: 0.55em; font-weight: normal; color: #0275d8; margin-left: auto; align-self: flex-end; margin-bottom: -2px;"></span>
+            </h2>
+            <hr style="border: 0; height: 1px; background: #ccc; margin: 5px 0 12px 0;">
+        </summary>
+
+        <div style="padding: 0 5px; text-align: justify; word-break: break-all; line-height: 1.6; font-size: 1em;">
+            <p style="margin: 0 0 8px 0;">
+                <b>킬러와는 거리가 먼 일반인</b>이다. 일본살이 2년 차이긴 하지만 애초에 일본어는 주X회전, 체X소맨, 괴X8호와 같은 애니로 배운 것이 전부라 일본 전반적인 것에 대한 것도 잘 모르는 편이다. 
+                <span class="footnote-container" tabindex="0">
+                    <span class="footnote-text">[11]</span>
+                    <span class="footnote-content">
+                        <span class="fn-num">[11]</span> 덕분에 가끔 시대에 뒤떨어지거나 서브컬처에서나 쓸 법한 말투를 구사하곤 한다. 그러나 현재는 많이 늘었으며 어려운 전문 용어를 제외하고는 알아듣는 것엔 문제가 없다. 다만 쓰기 읽기에는 여전히 약한 편. 급하면 그냥 한국어로 쓴다.
+                        <span class="fn-close-hint">닫으려면 바깥을 클릭하세요</span>
+                    </span>
+                </span> 일본으로 건너온 사유는 자세하게 밝혀지지 않았으며 나름 일본 생활에 만족하고 있다.<br><br>
+            <p style="margin: 0 0 8px 0;">
+                비교적 어린 나이부터 자립을 한 탓인지 <b>독립심</b>과 <b>경제관념</b>이 빡세게 잡혀 있는 편이다. 일본으로 건너와서도 빠르게 일본의 경제부터 파악했으며 학업과 알바를 동시에 쳐내며 꽤 짭짤한 수익금을 벌었으나 나중에 알았을 땐 한국에서의 <a href="https://namu.wiki/w/%EC%B5%9C%EC%A0%80%EC%9E%84%EA%B8%88%EC%A0%9C" target="_blank" style="color: #0275d8; text-decoration: none;">최저시급</a>과 별 다를 것이 없다는 것을 깨닫고 현타를 맞았다. <b>전세 사기</b>를 당하기 이전까지는 혼자 먹고 살만큼은 벌었다. <span style="color: #aaa; text-decoration: line-through;">가끔 장기매매 고민을 하곤 했지만.</span><br><br>
+            <p style="margin: 0;">
+                얼떨결에 <a href="https://namu.wiki/w/%EB%82%98%EA%B5%AC%EB%AA%A8(%EC%82%AC%EC%B9%B4%EB%AA%A8%ED%86%A0%20%EB%8D%B0%EC%9D%B4%EC%A6%88)" target="_blank" style="color: #0275d8; text-decoration: none;">나구모</a>와 만나고 난 뒤에야 킬러라는 존재에 대해 알게 되었다. 한국에서는 일본과 다르게 킬러 생활은 아주 비밀리에 이루어지는 <a href="https://namu.wiki/w/%EA%B5%AD%EA%B0%80%EC%A0%95%EB%B3%B4%EC%9B%90)" target="_blank" style="color: #0275d8; text-decoration: none;">국정원</a>과 같은 개념이었기에 일반인 입장에서는 알 리가 만무했던 듯. 나구모가 알려준 킬러 세계관에 대해 대충 이해했지만 자신과는 그다지 큰 연관없는 일이라 자세하게 이후 관심을 가지진 않았다.<br><br>
         </div>
-    </div>
-    ${bottomBoxesHtml}
-    <div style="margin-top: 15px; text-align: center; font-size: 10px; color: #bbb;">ⓒ 2026. kxxcho. All rights reserved.</div>
-</div>`;
-        return finalHtml;
-    }
 
-    function updatePreview() { document.getElementById('preview-area').innerHTML = generateFullHTML(); }
+        <details open class="wiki-section" style="margin-top: 25px; margin-left: 8px;">
+            <summary style="list-style: none; outline: none; cursor: pointer;">
+                <h2 id="s-2.1" class="wiki-heading" style="font-size: 1.5em; font-weight: bold; margin-bottom: 0; display: flex; align-items: center; border: none;">
+                    <span style="color: #0275d8; margin-right: 6px;">2.1.</span> 외모
+                    <span class="toggle-text" style="font-size: 0.55em; font-weight: normal; color: #0275d8; margin-left: auto; align-self: flex-end; margin-bottom: -2px;"></span>
+                </h2>
+                <hr style="border: 0; height: 1px; background: #ccc; margin: 5px 0 12px 0;">
+            </summary>
+            
+            <div style="padding: 0 5px;">
+                <div style="display: flex; gap: 6px; margin-bottom: 15px; align-items: flex-start; justify-content: center; width: 100%;">
+                    <div style="flex: 1; max-width: calc(33.33% - 4px); box-sizing: border-box;">
+                        <img src="https://i.postimg.cc/vT8wX3wc/무제34_20260222045900.png" alt="이루 외모 1" style="width: 100%; height: auto; border: 1px solid #ddd; border-radius: 8px; display: block;">
+                        <p style="font-size: 0.75em; color: #888; margin: 5px 0 0 0; text-align: center;">ⓒ dokma </p>
+                    </div>
+                    <div style="flex: 1; max-width: calc(33.33% - 4px); box-sizing: border-box;">
+                        <img src="https://i.postimg.cc/zvSvQ7Lz/무제40_20260315180034.png" alt="이루 외모 2" style="width: 100%; height: auto; border: 1px solid #ddd; border-radius: 8px; display: block;">
+                        <p style="font-size: 0.75em; color: #888; margin: 5px 0 0 0; text-align: center;">ⓒ dokma </p>
+                    </div>
+                    <div style="flex: 1; max-width: calc(33.33% - 4px); box-sizing: border-box;">
+                        <img src="https://i.postimg.cc/XqcqPLZN/무제40_20260315180055.png" alt="이루 외모 3" style="width: 100%; height: auto; border: 1px solid #ddd; border-radius: 8px; display: block;">
+                        <p style="font-size: 0.75em; color: #888; margin: 5px 0 0 0; text-align: center;">ⓒ dokma </p>
+                    </div>
+                </div>
+                
+                <div style="text-align: justify; word-break: break-all; line-height: 1.6; font-size: 1em;">
+                    <p style="margin: 0 0 8px 0;">
+                        옅은 <b>코토리 베이지 색상의 머리칼.</b> 빛을 받으면 약간 <b>채도 낮은 분홍빛</b>을 띠기도 한다. 길이는 가슴 아래 언저리까지 내려오며 생머리처럼 보이지만 이는 매일 아침 고데기의 힘을 빌려 직접 피는 편이다. 원래는 반곱슬이라 스타일링을 직접 하는 편이라 <b>고정적이지 않고 다양한 헤어스타일과 길이</b>가 특징이다.<br><br>
+                    <p style="margin: 0 0 8px 0;">
+                        앞머리는 눈썹을 살짝 덮을 정도로 내려와 있으며 옆머리는 적당한 길이로 내린 <b>히메컷</b>이 특징이다. <b>채도 낮은 분홍빛의 눈동자</b>와 처진 눈꼬리가 둥근 느낌을 주지만 속눈썹과 전체적인 인상을 보면 약간 날카로운 면모가 더 강하다. 전체적으로 빵빵한 애굣살과 날카로운 <b>언더래쉬</b>가 조화를 이루어 말랑하면서도 날카로운 면이 잘 드러난다.
+                        <span class="footnote-container" tabindex="0">
+                            <span class="footnote-text">[12]</span>
+                            <span class="footnote-content">
+                                <span class="fn-num">[12]</span> 나구모 曰: 아기 고양이 닮았어~ 하악질하는 것도 그렇고 말야.
+                                <span class="fn-close-hint">닫으려면 바깥을 클릭하세요</span>
+                            </span>
+                        </span>
+                    <br><br>
+                    <p style="margin: 0;">
+                        공식적인 키는 <b>161cm</b>이지만 본인은 신발 포함 166cm, 올림 170cm의 키라고 주장하며 사실을 부정하는 경우가 허다하다. 같이 사는 동거인과 다르게 나름 패션에 일가견이 있어 가끔 <a href="https://namu.wiki/w/%EB%82%98%EA%B5%AC%EB%AA%A8%20%EC%9A%94%EC%9D%B4%EC%B9%98" target="_blank" style="color: #0275d8; text-decoration: none;"><b>동거인</b></a><b>의 패션 취향을 이해할 수 없다</b>는 발언을 하며 잔소리를 자주 하는 편. 마른 편이기도 하고 옷태가 잘 나는 마른 체형이라 꾸미는 맛이 있는 듯.  
+                        <span class="footnote-container" tabindex="0">
+                            <span class="footnote-text">[13]</span>
+                            <span class="footnote-content">
+                                <span class="fn-num">[13]</span> 유일한 단점은 바스트. 같이 사는 어떤 동거인에 의하면 AA까진 아니고 꽉찬 A로 봐줄 만하다는 평이 있다. 나름의 콤플렉스인지 바스트가 중요한 옷을 입을 때는 꽤 신경을 많이 쓰는 편.  
+                                <span class="fn-close-hint">닫으려면 바깥을 클릭하세요</span>
+                            </span>
+                        </span>
+                    </p>
+                </div>
+            </div>
+        </details>
+
+        <details open class="wiki-section" style="margin-top: 25px; margin-left: 8px;">
+            <summary style="list-style: none; outline: none; cursor: pointer;">
+                <h2 id="s-2.2" class="wiki-heading" style="font-size: 1.5em; font-weight: bold; margin-bottom: 0; display: flex; align-items: center; border: none;">
+                    <span style="color: #0275d8; margin-right: 6px;">2.2.</span> 성격
+                    <span class="toggle-text" style="font-size: 0.55em; font-weight: normal; color: #0275d8; margin-left: auto; align-self: flex-end; margin-bottom: -2px;"></span>
+                </h2>
+                <hr style="border: 0; height: 1px; background: #ccc; margin: 5px 0 12px 0;">
+            </summary>
+            
+            <div style="padding: 0 5px;">
+                <div style="border-left: 3px solid #CD7071; background-color: #f9f9f9; padding: 10px 15px; margin-bottom: 15px; font-family: 'Noto Sans JP', sans-serif; font-size: 0.85em; width: auto; max-width: 100%; box-sizing: border-box;">
+                    <details style="cursor: pointer;">
+                        <summary style="list-style: none; outline: none; line-height: 1.6;">
+                            <style>
+                                summary::-webkit-details-marker { display: none; }
+                            </style>
+                            なっちゃんが ケガしたから、<br>しかたなく たすけてあげてるだけなんだからねっ！
+                        </summary>
+                        <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #ddd; color: #666;">
+                            나쨩이 다쳤으니까, <br>어쩔 수 없이 도와주는 것뿐이야!
+                        </div>
+                    </details>
+                </div>
+                <div style="text-align: justify; word-break: break-all; line-height: 1.6; font-size: 1em;">
+                    <p style="margin: 0;">
+                        <b>성가신 츤데레</b>와 <b>사회생활 만렙</b>이 공존하는 타입. 겉으로는 까칠한 독설과 함께 맥락을 비꼬아 본심을 숨기려 하지만, 그마저도 결국 상대에 대한 걱정이 베이스인 
+                        <a href="https://namu.wiki/w/%EA%B2%89%EB%B0%94%EC%86%8D%EC%B4%89" target="_blank" style="color: #0275d8; text-decoration: none;"><b>겉바속촉</b></a>의 표본이다. 그러나 본심을 꿰뚫을 수 있는 사람은 소수이고 대부분은 그저 <b>성가신 여자아이</b>로 보는 경우가 다수다.
+                    <br><br>
+                </div>
+            </div>
+          
+            <details open class="wiki-section" style="margin-top: 15px; margin-left: 8px;">
+                <summary style="list-style: none; outline: none; cursor: pointer;">
+                    <h3 id="s-2.2.1" class="wiki-heading" style="font-size: 1.3em; font-weight: bold; margin-bottom: 0; display: flex; align-items: center; border: none;">
+                        <span style="color: #0275d8; margin-right: 6px;">2.2.1.</span> 성가신 여자아이
+                        <span class="toggle-text" style="font-size: 0.6em; font-weight: normal; color: #0275d8; margin-left: auto; align-self: flex-end; margin-bottom: -2px;"></span>
+                    </h3>
+                    <hr style="border: 0; height: 1px; background: #ccc; margin: 5px 0 12px 0;">
+                </summary>
+                <div style="padding: 0 5px; text-align: justify; word-break: break-all; line-height: 1.6; font-size: 1em;">
+                    <p style="margin: 0 0 8px 0;">
+                        기본적으로 말씨가 곱지는 않다. 특히 본인의 <b>본심</b>이나 <b>약점</b>이 노출될 것 같은 상황에서는 <b>방어기제</b>로 말투와 맥락을 베베 꼬아서 대답하는 경향이 있다. 상대방 입장에서는 얘가 지금 비꼬는 건가? 싶을 정도로 <b>성가신 화법</b>을 구사하지만, 아이러니하게도 그 꼬아낸 말의 밑바닥에는 항상 진실이 깔려 있다.<br><br>
+                    <p style="margin: 0;">
+                        <b>거짓말은 못 하는 성격</b>이라 본심을 숨기려다 보니 말이 길어지는 것뿐, 결국은 상대가 원하는 것을 해주거나 걱정하는 마음이 담겨 있다. 직설적으로 본심을 드러내기 어려워하는 모습을 쉽게 볼 수 있는데 얼굴에 약하기에 본심을 보려면 해당 방법을 추천. 
+                        <span class="footnote-container" tabindex="0">
+                            <span class="footnote-text">[14]</span>
+                            <span class="footnote-content">
+                                <span class="fn-num">[14]</span> 해당 방법은 효과가 100% 적용되긴 하지만 취향을 맞추기에 까다롭다는 점이 있다. 대표적으로 통과 기준은 흑발콤 킬러콤 안경콤이 대표적. 
+                                <span class="fn-close-hint">닫으려면 바깥을 클릭하세요</span>
+                            </span>
+                        </span>
+                        <br><br>
+                        타인이 보기에는 참 피곤하게 산다 싶으면서도, 정작 결정적인 순간에는 상대의 면전에 대고 정공법으로 <b>카운터</b>를 날려 상대를 당황하게 만드는 의외의 대범함도 갖추고 있다. 
+                        <span class="footnote-container" tabindex="0">
+                            <span class="footnote-text">[15]</span>
+                            <span class="footnote-content">
+                                <span class="fn-num">[15]</span> 보통 여유로운 나구모가 가끔 당황하는 부분이 카츠노의 이런 부분이다. 예상하지 못한 부분에서 카운터를 맞는 경우가 가끔 있는데 생각하지도 못한 순간에 치고 들어오는 경우가 많아서 그 나구모 또한 당황하는 경우가 666번 중 1번 꼴로 생기곤 한다.
+                                <span class="fn-close-hint">닫으려면 바깥을 클릭하세요</span>
+                            </span>
+                        </span>
+                    <br><br>
+                </div>
+            </details>
+
+            <details open class="wiki-section" style="margin-top: 15px; margin-left: 8px;">
+                <summary style="list-style: none; outline: none; cursor: pointer;">
+                    <h3 id="s-2.2.2" class="wiki-heading" style="font-size: 1.3em; font-weight: bold; margin-bottom: 0; display: flex; align-items: center; border: none;">
+                        <span style="color: #0275d8; margin-right: 6px;">2.2.2.</span> 뺑이의 악마
+                        <span class="toggle-text" style="font-size: 0.6em; font-weight: normal; color: #0275d8; margin-left: auto; align-self: flex-end; margin-bottom: -2px;"></span>
+                    </h3>
+                    <hr style="border: 0; height: 1px; background: #ccc; margin: 5px 0 12px 0;">
+                </summary>
+                <div style="padding: 0 5px; text-align: justify; word-break: break-all; line-height: 1.6; font-size: 1em;">
+                    <p style="margin: 0 0 8px 0;">
+                        작중 묘사되는 일처리 능력은 그야말로 <b>뺑이의 악마</b>. 수년간의 아르바이트로 다져진 짬에서 나오는 바이브 덕분인지, 눈치를 과하게 보고 자란 탓인지. 상하관계 파악과 눈치가 귀신같다. 윗사람이 뭘 원하는지 굳이 말하지 않아도 미리 준비해두는 싹싹함을 가졌으며, 실수가 발생하더라도 뒤끝 없이 완벽하게 수습하는 스타일이라 조직 내 평판은 <b>극상</b>이다.<br><br>
+                    <p style="margin: 0;">
+                        평소 투덜거리는 입버릇만 제외하면 동료들 사이에서 신뢰도가 매우 높다. 귀찮다는 듯 중얼거리는 말 또한 까고 보면 상대를 걱정하거나 현재 맡은 일에 대한 걱정이 대다수. 결국 정신을 차려보면 주변 사람들이 카츠노에게 의지하고 있거나 어느새 <b>관계의 중심</b>에 서 있는 경우가 잦다. 
+                        <span class="footnote-container" tabindex="0">
+                            <span class="footnote-text">[16]</span>
+                            <span class="footnote-content">
+                                <span class="fn-num">[16]</span> 관심 받는 것을 즐기는 편이 아님에도 의도치 않게 관심을 받고 중심에 서는 경우가 많다. 본인은 싫어하는 편. 
+                                <span class="fn-close-hint">닫으려면 바깥을 클릭하세요</span>
+                            </span>
+                        </span>
+                    <br><br>
+                </div>
+            </details>
+
+            <details open class="wiki-section" style="margin-top: 15px; margin-left: 8px;">
+                <summary style="list-style: none; outline: none; cursor: pointer;">
+                    <h3 id="s-2.2.3" class="wiki-heading" style="font-size: 1.3em; font-weight: bold; margin-bottom: 0; display: flex; align-items: center; border: none;">
+                        <span style="color: #0275d8; margin-right: 6px;">2.2.3.</span> 노빠꾸 노필터링
+                        <span class="toggle-text" style="font-size: 0.6em; font-weight: normal; color: #0275d8; margin-left: auto; align-self: flex-end; margin-bottom: -2px;"></span>
+                    </h3>
+                    <hr style="border: 0; height: 1px; background: #ccc; margin: 5px 0 12px 0;">
+                </summary>
+                <div style="padding: 0 5px; text-align: justify; word-break: break-all; line-height: 1.6; font-size: 1em;">
+                    <p style="margin: 0 0 8px 0;">
+                        기본적인 정서 상태는 꽤 안정적이고 단단한 편이다. 웬만한 자극에는 눈 하나 깜빡하지 않지만, <b>자신의 속마음을 들키는 것</b>만큼은 견디지 못할 정도로 쑥스러워한다. 이 방어선이 뚫리는 순간 평소의 침착함은 어디 가고 당황해서 말이 장황해지거나, 한국인 특유의 기질이 발동해 <b>한국어</b>로 쏘아붙이며 상대의 정신을 쏙 빼놓는다. <span style="color: #999; text-decoration: line-through;">물론 나구모는 이제 즐기는 쪽에 가깝다.</span>
+                        <span class="footnote-container" tabindex="0">
+                            <span class="footnote-text">[17]</span>
+                            <span class="footnote-content">
+                                <span class="fn-num">[17]</span> 이때의 속사포 랩은 거의 래퍼 수준이라 나구모도 흥미진진하게 구경하곤 한다. <span style="color: #999; text-decoration: line-through;">쇼X더머니?</span> 얼굴부터 뒷목 그리고 귓가까지 차차 빨개지는 모습이 보기 즐겁다는 것이 나구모의 평. 의도한 놀림으로 자주 구경하곤 한다. 
+                                <span class="fn-close-hint">닫으려면 바깥을 클릭하세요</span>
+                            </span>
+                        </span>
+                    <br><br>
+                    <p style="margin: 0;">
+                        하지만 결국 이후에는 자포자기하는 심정으로 본심을 툭 던져버리는 솔직함도 갖추고 있다. 그러나 이런 솔직함이 나올 때는 정말 <b>필터링을 하나 거치지 않고</b> 던지는 말이 많기 때문에 상대가 종종 당황하는 경우가 자주 발생하곤 한다. 주변에 따르면 생각을 그대로 표현하는 것에 가까운 언행. 
+                        <span class="footnote-container" tabindex="0">
+                            <span class="footnote-text">[18]</span>
+                            <span class="footnote-content">
+                                <span class="fn-num">[18]</span> 생각을 읽을 줄 아는 <a href="https://namu.wiki/w/%EC%95%84%EC%82%AC%EC%BF%A0%EB%9D%BC%20%EC%8B%A0" target="_blank" style="color: #0275d8; text-decoration: none;">아사쿠라 신</a> 또한 카츠노의 언행이 생각과 그대로라 말한 적이 있으므로 증명된 부분이 여럿있다.
+                                <span class="fn-close-hint">닫으려면 바깥을 클릭하세요</span>
+                            </span>
+                        </span>
+                    <br><br>
+                    </p>
+                </div>
+            </details>
+
+            <details open class="wiki-section" style="margin-top: 15px; margin-left: 8px;">
+                <summary style="list-style: none; outline: none; cursor: pointer;">
+                    <h3 id="s-2.2.4" class="wiki-heading" style="font-size: 1.3em; font-weight: bold; margin-bottom: 0; display: flex; align-items: center; border: none;">
+                        <span style="color: #0275d8; margin-right: 6px;">2.2.4.</span> 럭키? 언럭키! 
+                        <span class="toggle-text" style="font-size: 0.6em; font-weight: normal; color: #0275d8; margin-left: auto; align-self: flex-end; margin-bottom: -2px;"></span>
+                    </h3>
+                    <hr style="border: 0; height: 1px; background: #ccc; margin: 5px 0 12px 0;">
+                </summary>
+                <div style="padding: 0 5px; text-align: justify; word-break: break-all; line-height: 1.6; font-size: 1em;">
+                    <p style="margin: 0 0 8px 0;">
+                        생각보다 내면이 깊고 성숙한 편이다. <span style="color: #999; text-decoration: line-through;">나구모 앞에서는 유독 성가시고 어린아이처럼 굴기도 하지만</span> 실제 언행에서는 나이대에 맞지 않는 <b>성숙함</b>과 <b>침착함</b>이 묻어난다. 특히 감정 회복 탄력성이 작중 최상위권에 속하는데, 본인의 감당 범위를 넘어서는 충격적인 사건이 발생하더라도 짧은 방황 끝에 금세 평소의 모습으로 돌아온다. 크게 우울감에 빠져 허우적대기보다는 빠르게 대안을 찾는 타입. 이러한 정신력 덕분에 주변에서는 <b>자타공인 정신 건강 일짱</b>이라 불리기도 한다. 
+                        <br><br>
+                        본인의 운에 대해서도 상당히 긍정적이고 독특한 철학을 가지고 있다. 객관적으로 보면 불운의 연속인 삶처럼 보일 수 있으나, 본인은 오히려 운이 좋은 편이라고 진심으로 믿는다. 어떻게 보면 <b>상대적 행운론</b>. <span style="color: #c0504d; font-weight: bold;">1%의 절망보다 99%의 생존에 집중하는 스타일.</span>
+                        <span class="footnote-container" tabindex="0">
+                            <span class="footnote-text">[19]</span>
+                            <span class="footnote-content">
+                                <span class="fn-num">[19]</span> 
+                                <span style="color: #0275d8; font-weight: bold;">스포일러 주의</span> 
+                                
+                                <span style="background-color: #ffffff; color: #e5e5e5; cursor: text;" title="이 부분을 드래그하면 내용이 보입니다.">
+                                     실제로 나구모를 만나기 전에는 불운 속성이 꽤나 높았지만 나구모를 만나고 킬러 세계에 의도치않게 발을 들인 이후에는 운 속성이 불운보다는 크게 높아진 편이긴 하다. 물론 남아있는 초절정의 불운은 세기의 킬러전 편에서 액땜했다. 행운을 전부 소모하고 불운만 남은 아타리와는 정반대되는 안티테제(Antithesis)적 포지션. 아타리가 행운을 앞당겨 쓰고 파멸로 향하는 '소모형'이라면, 카츠노는 일상의 소소한 불운을 끊임없이 겪으면서 일종의 불운 적립을 하고, 이를 결정적인 생사의 갈림길에서 폭발적인 생존운으로 치환해 사용하는 식. 자세한 내용은 4.1 럭키와 언럭키의 不可測 항목 참조.
+                                </span>
+                                <span class="fn-close-hint">내용을 보려면 위 빈칸을 드래그하세요.</span>
+                            </span>
+                        </span>
+                    <p style="margin: 0;"></p>
+                </div>
+            </details>
+        </details>
+      <br>
+        <details open class="wiki-section" style="margin-top: 25px; margin-left: 8px;">
+            <summary style="list-style: none; outline: none; cursor: pointer;">
+                <h2 id="s-2.3" class="wiki-heading" style="font-size: 1.5em; font-weight: bold; margin-bottom: 0; display: flex; align-items: center; border: none;">
+                    <span style="color: #0275d8; margin-right: 6px;">2.3.</span> 非日常 속의 일상
+                    <span class="toggle-text" style="font-size: 0.55em; font-weight: normal; color: #0275d8; margin-left: auto; align-self: flex-end; margin-bottom: -2px;"></span>
+                </h2>
+                <hr style="border: 0; height: 1px; background: #ccc; margin: 5px 0 12px 0;">
+            </summary>
+            
+            <div style="padding: 0 5px; text-align: justify; word-break: break-all; line-height: 1.6; font-size: 1em;">
+                <p style="margin: 0;">
+                    <a href="https://namu.wiki/w/한국인" target="_blank" style="color: #0275d8; text-decoration: none;"><b>한국인</b></a>으로서의 정체성과 <a href="https://namu.wiki/w/일본" target="_blank" style="color: #0275d8; text-decoration: none;"><b>일본</b></a>에서의 삶이 묘하게 뒤섞여 독특한 분위기를 자아낸다. 낯선 타국 땅임에도 불구하고 <b>특유의 감각과 빠른 적응력</b>을 바탕으로 일본 사회에 무리 없이 녹아들었으며, 언어나 문화의 장벽에 가로막히기보다는 <b>스스로의 역치에 맞게 능동적으로 구축해 나가는 편.</b>
+                <br><br>
+                겉으로는 별다른 불편함 없이 평범한 일본 생활을 영위하는 듯 보이지만 유연한 적응력 이면에는 자신을 지키기 위해 갈고닦은 단단한 내면과 <b>미성년의 방황과 고뇌가 교차하는 성장통</b>이 가끔 보인다.<br>
+            </div>
+<br>
+            <details open class="wiki-section" style="margin-top: 15px; margin-left: 8px;">
+                <summary style="list-style: none; outline: none; cursor: pointer;">
+                    <h3 id="s-2.3.1" class="wiki-heading" style="font-size: 1.3em; font-weight: bold; margin-bottom: 0; display: flex; align-items: center; border: none;">
+                        <span style="color: #0275d8; margin-right: 6px;">2.3.1.</span> 키미노 나마에와
+                        <span class="toggle-text" style="font-size: 0.6em; font-weight: normal; color: #0275d8; margin-left: auto; align-self: flex-end; margin-bottom: -2px;"></span>
+                    </h3>
+                    <hr style="border: 0; height: 1px; background: #ccc; margin: 5px 0 12px 0;">
+                </summary>
+                <div style="padding: 0 5px; text-align: justify; word-break: break-all; line-height: 1.6; font-size: 1em;">
+                    <p style="margin: 0 0 8px 0;">
+                        첫 만남 때부터 <a href="https://namu.wiki/w/%EB%82%98%EA%B5%AC%EB%AA%A8%20%EC%9A%94%EC%9D%B4%EC%B9%98" target="_blank" style="color: #0275d8; text-decoration: none;"><b>나구모</b></a>에게도 일본 이름으로 소개했기 때문에 한국 이름은 추후에 밝혔다. 일본에서 지낸 세월이 점차 늘어가며 한국 이름은 딱히 쓸 일이 없었기에 <b>한국 이름을 알고 있는 사람도 소수.</b> 
+                        <span class="footnote-container" tabindex="0">
+                            <span class="footnote-text">[20]</span>
+                            <span class="footnote-content">
+                                <span class="fn-num">[20]</span> 알고 있는 사람은 <a href="https://namu.wiki/w/%EB%82%98%EA%B5%AC%EB%AA%A8%20%EC%9A%94%EC%9D%B4%EC%B9%98" target="_blank" style="color: #0275d8; text-decoration: none;">나구모 요이치</a>, <a href="https://namu.wiki/w/%EC%82%AC%EC%B9%B4%EB%AA%A8%ED%86%A0%20%ED%83%80%EB%A1%9C" target="_blank" style="color: #0275d8; text-decoration: none;">사카모토 타로</a>, <a href="https://namu.wiki/w/%EC%95%84%EC%82%AC%EC%BF%A0%EB%9D%BC%20%EC%8B%A0" target="_blank" style="color: #0275d8; text-decoration: none;">아사쿠라 신</a>
+                                <span class="fn-close-hint">닫으려면 바깥을 클릭하세요</span>
+                            </span>
+                        </span> 
+
+                        카츠노 이루라는 일본 이름도 본명에서 따와 <a href="https://namu.wiki/w/ChatGPT" target="_blank" style="color: #0275d8; text-decoration: none;"><b>챗지피티</b></a>의 힘을 빌린 것이었다고. 한국 이름은 이로울 利에 물결 澇. 성은 따로 쓰지 않는다. 우스갯소리로 자기 취향의 사람이 있으면 성 갈고 입적한다라는 소리를 종종 하곤 한다. 성이 없는 채 살기로 마음 먹었기에 반은 아마 꽤 진심인 듯. 
+
+                        <span class="footnote-container" tabindex="0">
+                            <span class="footnote-text">[21]</span>
+                            <span class="footnote-content">
+                                <span class="fn-num">[21]</span> 나구모가 나구모 이루는 어떠냐고 묻자 어감이 별로라면서 바로 기각시켰다. 한국 이름의 바리에이션으로는 연이로, 일본 이름의 바리에이션으로는 사카타 이루가 대표적.
+                                <span class="fn-close-hint">닫으려면 바깥을 클릭하세요</span>
+                            </span>
+                        </span>
+                    <br>
+                </div>
+            </details>
+
+            <details open class="wiki-section" style="margin-top: 15px; margin-left: 8px;">
+                <summary style="list-style: none; outline: none; cursor: pointer;">
+                    <h3 id="s-2.3.2" class="wiki-heading" style="font-size: 1.3em; font-weight: bold; margin-bottom: 0; display: flex; align-items: center; border: none;">
+                        <span style="color: #0275d8; margin-right: 6px;">2.3.2.</span> 半韓半日
+                        <span class="toggle-text" style="font-size: 0.6em; font-weight: normal; color: #0275d8; margin-left: auto; align-self: flex-end; margin-bottom: -2px;"></span>
+                    </h3>
+                    <hr style="border: 0; height: 1px; background: #ccc; margin: 5px 0 12px 0;">
+                </summary>
+                <div style="padding: 0 5px; text-align: justify; word-break: break-all; line-height: 1.6; font-size: 1em;">
+                    <p style="margin: 0 0 8px 0;"> 
+                        전문적인 일어 교육 대신 <b>애니메이션과 만화</b>를 통해 언어를 습득한 탓에, 일상적인 대화 도중 뜬금없는 표현이 튀어나오기도 한다. 듣는 사람 입장에서는 <b>방금 애니 대사 같았어</b>라는 반응이 나온다. 문장 끝처리를 할 때 간혹 한국어의 느낌이 섞이기도. 특히 '<a href="https://namu.wiki/w/%E3%81%A4" target="_blank" style="color: #0275d8; text-decoration: none;"><b>츠(つ)</b></a>'나 '<a href="https://namu.wiki/w/%E3%81%A4#s-3" target="_blank" style="color: #0275d8; text-decoration: none;"><b>즈(づ)</b></a>' 같은 일본어 특유의 발음이 한국식으로 뭉개지면서 묘하게 콧소리가 섞이는데, 이게 특유의 애교 섞인 말투로 굳어졌다. 이런 부분에서 나구모는 카츠노가 발음이 꼬여서 웅얼거릴 때마다 일부러 못 들은 척하며 한 번 더 시키는 악취미를 보여주기도 한다.
+
+                        <span class="footnote-container" tabindex="0">
+                            <span class="footnote-text">[22]</span>
+                            <span class="footnote-content">
+                                <span class="fn-num">[22]</span>주로 なっちゃん, ほんとにひどい! 라고 외치는 식인데, 이때 'ひどい'가 발음이 살짝 뭉개져서 들리는 게 킬링 포인트.
+                                <span class="fn-close-hint">닫으려면 바깥을 클릭하세요</span>
+                            </span>
+                        </span>
+                    <br><br>
+                        물론 이런 것처럼 약간의 웃긴 포인트가 있을 뿐 일상 회화는 무리가 없지만, 한자(漢字)와 비즈니스 용어 등 <b>고난도 어휘</b> 앞에서는 급격히 지능이 하락하는 모습을 보인다. 이는 전문 교육 없이 애니메이션과 실전 회화로만 일본어를 익힌 독학파의 한계가 명확히 드러나는 지점인 듯. 획수가 많은 한자를 보면 일단 그림 같다며 포기하고 구글 렌즈를 켜는 모습이 자주 보인다. 
+                        <span class="footnote-container" tabindex="0">
+                            <span class="footnote-text">[23]</span>
+                            <span class="footnote-content">
+                                <span class="fn-num">[23]</span>추가적으로 가타카나로 표기된 외래어는 영어 발음과 일본어 발음 사이에서 혼란을 겪는다. 한국식 영어 발음에 익숙하다 보니 일본식 가타카나 발음을 들으면 어색해 하는 모습이 자주 보인다. 
+                                <span class="fn-close-hint">닫으려면 바깥을 클릭하세요</span>
+                            </span>
+                        </span>
+                    <br><br>
+                        당황하거나 화가 나면 자신도 모르게 한국어가 툭툭 튀어나오는 <a href="https://namu.wiki/w/%EC%BD%94%EB%93%9C%20%EC%8A%A4%EC%9C%84%EC%B9%AD" style="color: #0275d8; text-decoration: none; font-weight: bold;">코드 스위칭(Code-switching)</a>이 잦다. 가끔 여고생들 사이에서 유행하는 <b>줄임말</b>이나 <b>은어</b>를 일본어 조사와 합쳐서 쓰기도. 특히 감정이 격해지면 한국어를 남발하거나 <b>한국어 특유 투덜거림</b><span style="color: #999; text-decoration: line-through;">(이라 쓰고 비속어라 읽는다)</span>을 구사하기도 한다.
+                    <br><br>
+                        이후 주된 소통 창구로 사용하게 되는 <b>메모장 대화</b>에서도 특유의 어설픈 말투가 고스란히 드러난다. 일본어 키보드 조작이 서툴러서 생기는 오타들이 잦으며, 아무래도 한자에 약하다 보니 <a href="https://namu.wiki/w/%EC%9E%90%EB%8F%99%20%EC%99%84%EC%84%B1?from=%EC%9E%90%EB%8F%99%EC%99%84%EC%84%B1" style="color: #0275d8; text-decoration: none; font-weight: bold;">자동 완성 기능</a>을 전적으로 신뢰하는데, 이 과정에서 가끔 엉뚱한 한자를 골라놓고 나구모에게 보여줬다가 놀림받는 상황이 발생한다. 얼굴이 빨개져서 <b>笑うな! 携帯が悪いんだもん!</b>라고 텍스트로 소리치는 게 묘미. 메모장으로도 다 표현하지 못하는 답답함이 생기면, 아예 <a href="https://namu.wiki/w/%EA%B0%80%ED%83%80%EC%B9%B4%EB%82%98?from=%EA%B0%80%ED%83%80%EA%B0%80%EB%82%98" style="color: #0275d8; text-decoration: none; font-weight: bold;">가타카나</a> 로 <b>한국어 발음</b>을 그대로 적어버린다. 시간이 지난 후에는 소통의 속도를 높이기 위해 스마트폰의 <b>텍스트 대치 기능</b>을 적극적으로 활용하기도 한다. 일일이 한자를 치기 힘들어서 특정 자음만 쳐도 나오는 형태. 
+                </div>
+            </details>
+
+            <details open class="wiki-section" style="margin-top: 15px; margin-left: 8px;">
+                <summary style="list-style: none; outline: none; cursor: pointer;">
+                    <h3 id="s-2.3.4" class="wiki-heading" style="font-size: 1.3em; font-weight: bold; margin-bottom: 0; display: flex; align-items: center; border: none;">
+                        <span style="color: #0275d8; margin-right: 6px;">2.3.3.</span> 미남은 죄가 없어
+                        <span class="toggle-text" style="font-size: 0.6em; font-weight: normal; color: #0275d8; margin-left: auto; align-self: flex-end; margin-bottom: -2px;"></span>
+                    </h3>
+                    <hr style="border: 0; height: 1px; background: #ccc; margin: 5px 0 12px 0;">
+                </summary>
+                <div style="padding: 0 5px; text-align: justify; word-break: break-all; line-height: 1.6; font-size: 1em;">
+                    <p style="margin: 0 0 8px 0;">
+                        부정할 수 없는 상당한 수준의 <a href="https://namu.wiki/w/%EC%96%BC%EB%B9%A0" target="_blank" style="color: #0275d8; text-decoration: none;"><b>얼빠.</b></a> <b>성가신 여자아이</b>라고 불릴 만큼 맥락을 꼬아 말하고 방어기제가 강하지만 본인의 취향을 정면으로 관통하는 인물의 
+                        <span class="footnote-container" tabindex="0">
+                            <span class="footnote-text">[24]</span>
+                            <span class="footnote-content">
+                                <span class="fn-num">[24]</span>주변에서는 그냥 <a href="https://namu.wiki/w/%EB%82%98%EA%B5%AC%EB%AA%A8%20%EC%9A%94%EC%9D%B4%EC%B9%98" target="_blank" style="color: #0275d8; text-decoration: none;">나구모 요이치</a> 처럼 생긴 얼굴이 취향인 게 아니냐는 의혹을 사고 있다.
+                                <span class="fn-close-hint">닫으려면 바깥을 클릭하세요</span>
+                            </span>
+                        </span>
+                        앞에서는 그 방어막이 허무하게 무너지는 경향이 있다. 특히나 <a href="https://namu.wiki/w/%EB%82%98%EA%B5%AC%EB%AA%A8(%EC%82%AC%EC%B9%B4%EB%AA%A8%ED%86%A0%20%EB%8D%B0%EC%9D%B4%EC%A6%88)" target="_blank" style="color: #0275d8; text-decoration: none;"><b>나구모</b></a>와의 관계에서 이러한 면모가 두드러지는데, 머리로는 부정하면서도 시각적인 정보에 뇌가 저당 잡혀 결과적으로 상대의 페이스에 휘말려버리는 식이다. 
+                        <br><br>
+                        비주얼 한정으로 <b>인내심의 역치</b>가 굉장히 높아지는 것도 특징. 상대가 본인의 취향에 맞는 미소를 지으며 다가오면 화를 내는 타이밍을 종종 놓치고 만다. 나구모가 얼굴을 가까이 들이밀며 능청을 떨 때마다 당황해서 <b>한국어를 쏟아내거나 말끝을 뭉개는 버릇</b>이 튀어나오는 것도 결국은 지독한 얼빠 기질 때문이다.
+                        <span class="footnote-container" tabindex="0">
+                            <span class="footnote-text">[25]</span>
+                            <span class="footnote-content">
+                                <span class="fn-num">[25]</span> 나구모는 카츠노의 이러한 취약점을 정확히 꿰뚫고 있으며, 이를 이용해 카츠노를 고장 내거나 상황을 모면하는 유희를 즐기곤 한다.
+                                <span class="fn-close-hint">닫으려면 바깥을 클릭하세요</span> 
+                            </span> 
+                        </span> 
+                    <br><br>
+                </div>
+            </details>
+        </details>
+    </details>
+</div>
+
+
+
+
+
+
+
+<div style="margin-top: 25px; width: 100%; font-family: sans-serif; color: #373a3c; line-height: 1.5; box-sizing: border-box;">
+
+    <style>
+        /* 각주 스타일 */
+        .footnote-container { position: relative; display: inline-block; cursor: pointer; color: #0275d8; }
+        .footnote-content { 
+            display: none; position: absolute; bottom: 120%; left: 50%; transform: translateX(-50%);
+            width: 280px; background: white; border: 1px solid #ddd; padding: 12px; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1); z-index: 1000; color: #333; font-size: 0.9em; line-height: 1.6;
+            text-align: left; border-radius: 4px;
+        }
+        .footnote-container:focus .footnote-content { display: block; }
+        .fn-num { color: #0275d8; font-weight: bold; margin-right: 5px; }
+        .fn-close-hint { display: block; margin-top: 8px; font-size: 0.8em; color: #999; text-align: center; border-top: 1px solid #eee; padding-top: 5px; }
+
+        /* 위키 섹션 접기/펼치기 공통 스타일 */
+        summary::-webkit-details-marker { display: none; }
+        
+        /* "⌵" 특수문자 공통 설정 */
+        details.wiki-section > summary > .wiki-heading::before,
+        details.wiki-section-main > summary > .wiki-heading::before {
+            content: '⌵'; display: inline-block; margin-right: 8px; font-size: 0.6em; color: #888; font-weight: bold; transition: transform 0.3s ease-in-out;
+        }
+        
+        /* 닫혀있을 때 화살표 회전 (> 모양) */
+        details.wiki-section:not([open]) > summary > .wiki-heading::before,
+        details.wiki-section-main:not([open]) > summary > .wiki-heading::before { transform: rotate(-90deg); }
+        
+        details.wiki-section[open] > summary > .wiki-heading::before,
+        details.wiki-section-main[open] > summary > .wiki-heading::before { transform: rotate(0deg); }
+
+        /* [접기] / [펼치기] 텍스트 동적 변경 */
+        details.wiki-section:not([open]) > summary > .wiki-heading > .toggle-text::after,
+        details.wiki-section-main:not([open]) > summary > .wiki-heading > .toggle-text::after { content: '[펼치기]'; }
+        
+        details.wiki-section[open] > summary > .wiki-heading > .toggle-text::after,
+        details.wiki-section-main[open] > summary > .wiki-heading > .toggle-text::after { content: '[접기]'; }
+    </style>
+
+<details open class="wiki-section-main">
+    <summary style="list-style: none; outline: none; cursor: pointer;">
+         <h2 id="s-3" class="wiki-heading" style="font-size: 1.6em; font-weight: bold; margin-bottom: 0; display: flex; align-items: center; border: none;">
+
+            <span style="color: #0275d8; margin-right: 6px;">3.</span> 작중 행적
+
+            <span class="toggle-text" style="font-size: 0.55em; font-weight: normal; color: #0275d8; margin-left: auto; align-self: flex-end; margin-bottom: -2px;"></span>
+
+        </h2>
+
+        <hr style="border: 0; height: 1px; background: #ccc; margin: 5px 0 12px 0; width: 100%;">
+        <div style="cursor: auto;" onclick="event.stopPropagation();">
+
+            <div style="display: flex; align-items: center; margin: 10px 0 15px 0; font-family: Pretendard, sans-serif; box-sizing: border-box;">
+
+                <div style="border: 1px solid #bbb; width: 100%;">
+
+                    <div style="background-color: #f0ad4e; height: 4px;"></div>
+
+                    <div style="padding: 10px 15px; text-align: center;">
+
+                        <div style="font-size: 1em; font-weight: bold; margin-bottom: 3px;">문서에 <span style="color: #0275d8;">스포일러</span>가 포함되어 있습니다.</div>
+
+                        <div style="font-size: 0.75em; color: #666;">이 문서가 설명하는 인물 등에 대한 반전 요소 등을 포함하고 있습니다.</div>
+
+                     </div>
+
+                </div>
+
+            </div>
+
+            <div style="padding: 0 5px; text-align: justify; word-break: break-all; line-height: 1.6; font-size: 1em; margin-bottom: 20px;">
+
+                <a href="https://namu.wiki/w/%EC%82%AC%EC%B9%B4%EB%AA%A8%ED%86%A0%20%EB%8D%B0%EC%9D%B4%EC%A6%88" target="_blank" style="color: #0275d8; text-decoration: none;">사카모토 데이즈</a>의 비공식 등장인물 <a href="https://mylucky6killer.tistory.com/40" target="_blank" style="color: #0275d8; text-decoration: none;">카츠노 이루</a>의 작중 행적. 
+
+            </div>
+
+        </div>
+
+    </summary>
+
+        <div style="margin-top: 15px;">
+            
+            <details open class="wiki-section" style="margin-left: 8px; margin-bottom: 25px;">
+                <summary style="list-style: none; outline: none; cursor: pointer;">
+                    <h3 id="s-3.1" class="wiki-heading" style="font-size: 1.4em; font-weight: bold; margin-bottom: 0; display: flex; align-items: center; border: none;">
+                        <span style="color: #0275d8; margin-right: 6px;">3.1.</span> 텍스트
+                        <span class="toggle-text" style="font-size: 0.55em; font-weight: normal; color: #0275d8; margin-left: auto; align-self: flex-end; margin-bottom: -2px;"></span>
+                    </h3>
+                    <hr style="border: 0; height: 1px; background: #ccc; margin: 5px 0 12px 0;">
+                </summary>
+                <div style="padding: 0 5px; text-align: justify; word-break: break-all; line-height: 1.6; font-size: 1em;">
+                    <p style="margin: 0;">
+                  
+                  
+                  </p>
+                </div>
+            </details>
+
+          
+          
+          
+          
+            <details open class="wiki-section" style="margin-left: 8px; margin-bottom: 25px;">
+                <summary style="list-style: none; outline: none; cursor: pointer;">
+                    <h3 id="s-3.2" class="wiki-heading" style="font-size: 1.4em; font-weight: bold; margin-bottom: 0; display: flex; align-items: center; border: none;">
+                        <span style="color: #0275d8; margin-right: 6px;">3.2.</span> 텍스트 
+                        <span class="toggle-text" style="font-size: 0.55em; font-weight: normal; color: #0275d8; margin-left: auto; align-self: flex-end; margin-bottom: -2px;"></span>
+                    </h3>
+                    <hr style="border: 0; height: 1px; background: #ccc; margin: 5px 0 12px 0;">
+                </summary>
+                
+                <div style="padding: 0 5px; text-align: justify; word-break: break-all; line-height: 1.6; font-size: 1em;">
+                    <p style="margin: 0;">
+                  
+                  
+                  
+                  
+                  </p>
+                </div>
+
+               
+              
+              
+              
+                <details open class="wiki-section" style="margin-left: 8px; margin-top: 15px;">
+                    <summary style="list-style: none; outline: none; cursor: pointer;">
+                        <h4 id="s-3.2.1" class="wiki-heading" style="font-size: 1.3em; font-weight: bold; margin-bottom: 0; display: flex; align-items: center; border: none;">
+                            <span style="color: #0275d8; margin-right: 6px;">3.2.1.</span> 어쩌고 저쩌고
+                            <span class="toggle-text" style="font-size: 0.55em; font-weight: normal; color: #0275d8; margin-left: auto; align-self: flex-end; margin-bottom: -2px;"></span>
+                        </h4>
+                        <hr style="border: 0; height: 1px; background: #ccc; margin: 5px 0 12px 0;">
+                    </summary>
+                    <div style="padding: 0 5px; text-align: justify; line-height: 1.6; font-size: 1em;">
+                      
+                  
+                  </div>
+                </details>
+
+              
+              
+              
+                <details open class="wiki-section" style="margin-left: 8px; margin-top: 15px;">
+                    <summary style="list-style: none; outline: none; cursor: pointer;">
+                        <h4 id="s-3.2.2" class="wiki-heading" style="font-size: 1.3em; font-weight: bold; margin-bottom: 0; display: flex; align-items: center; border: none;">
+                            <span style="color: #0275d8; margin-right: 6px;">3.2.2.</span> 어쩌고 저쩌고
+                            <span class="toggle-text" style="font-size: 0.55em; font-weight: normal; color: #0275d8; margin-left: auto; align-self: flex-end; margin-bottom: -2px;"></span>
+                        </h4>
+                        <hr style="border: 0; height: 1px; background: #ccc; margin: 5px 0 12px 0;">
+                    </summary>
+                    <div style="padding: 0 5px; text-align: justify; line-height: 1.6; font-size: 1em;">
+                  
+                      
+                  </div>
+                </details>
+
+              
+              
+              
+              
+                <details open class="wiki-section" style="margin-left: 8px; margin-top: 15px;">
+                    <summary style="list-style: none; outline: none; cursor: pointer;">
+                        <h4 id="s-3.2.3" class="wiki-heading" style="font-size: 1.3em; font-weight: bold; margin-bottom: 0; display: flex; align-items: center; border: none;">
+                            <span style="color: #0275d8; margin-right: 6px;">3.2.3.</span> 어쩌고 저쩌고
+                            <span class="toggle-text" style="font-size: 0.55em; font-weight: normal; color: #0275d8; margin-left: auto; align-self: flex-end; margin-bottom: -2px;"></span>
+                        </h4>
+                        <hr style="border: 0; height: 1px; background: #ccc; margin: 5px 0 12px 0;">
+                    </summary>
+                    <div style="padding: 0 5px; text-align: justify; line-height: 1.6; font-size: 1em;">
+                  
+                  
+                  
+                  </div>
+                </details>
+
+              
+              
+              
+              
+              
+                <details open class="wiki-section" style="margin-left: 8px; margin-top: 15px;">
+                    <summary style="list-style: none; outline: none; cursor: pointer;">
+                        <h4 id="s-3.2.4" class="wiki-heading" style="font-size: 1.3em; font-weight: bold; margin-bottom: 0; display: flex; align-items: center; border: none;">
+                            <span style="color: #0275d8; margin-right: 6px;">3.2.4.</span> 어쩌고 저쩌고
+                            <span class="toggle-text" style="font-size: 0.55em; font-weight: normal; color: #0275d8; margin-left: auto; align-self: flex-end; margin-bottom: -2px;"></span>
+                        </h4>
+                        <hr style="border: 0; height: 1px; background: #ccc; margin: 5px 0 12px 0;">
+                    </summary>
+                    <div style="padding: 0 5px; text-align: justify; line-height: 1.6; font-size: 1em;">
+                      
+                      
+                  
+                  
+                  </div>
+                </details>
+            </details>
+
+          
+          
+          
+          
+            <details open class="wiki-section" style="margin-left: 8px; margin-bottom: 25px;">
+                <summary style="list-style: none; outline: none; cursor: pointer;">
+                    <h3 id="s-3.3" class="wiki-heading" style="font-size: 1.4em; font-weight: bold; margin-bottom: 0; display: flex; align-items: center; border: none;">
+                        <span style="color: #0275d8; margin-right: 6px;">3.3.</span> 킬러의 고양이 냥줍 사건
+                        <span class="toggle-text" style="font-size: 0.55em; font-weight: normal; color: #0275d8; margin-left: auto; align-self: flex-end; margin-bottom: -2px;"></span>
+                    </h3>
+                    <hr style="border: 0; height: 1px; background: #ccc; margin: 5px 0 12px 0;">
+                </summary>
+                
+                <div style="padding: 0 5px; text-align: justify; word-break: break-all; line-height: 1.6; font-size: 1em;">
+    <img src="https://i.postimg.cc/dQLBghhc/１_１_2.png" alt="나노" style="width: 100%; max-width: 400px; height: auto; border: 1px solid #ddd; border-radius: 8px;">
+    <p style="font-size: 0.8em; color: #888; margin-top: 2px; margin-left: 2px; margin-bottom: 0;"> ⓒ watermelone </p>
     
-    function captureMockup() {
-        const target = document.getElementById('capture-card');
-        const btn = document.querySelector('.btn-download');
-        btn.innerText = "📸 wait...";
-        html2canvas(target, { backgroundColor: null, scale: 3, useCORS: true, allowTaint: true }).then(canvas => {
-            const imgData = canvas.toDataURL('image/png');
-            if (window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-                document.getElementById('result-img').src = imgData;
-                document.getElementById('result-modal').style.display = 'flex';
-            } else {
-                let link = document.createElement('a'); link.download = `kxxcho_relation.png`; link.href = imgData; link.click();
-            }
-            btn.innerText = "📸 이미지로 저장하기";
-        });
-    }
+    <div style="height: 10px;"></div>
+    
+    <p style="margin: 0;">
+        본편 시점 이전 <a href="https://namu.wiki/w/%EB%82%98%EA%B5%AC%EB%AA%A8%20%EC%9A%94%EC%9D%B4%EC%B9%98" target="_blank" style="color: #0275d8; text-decoration: none;">나구모</a>와의 첫 만남과 동거의 시작까지의 행적.
+        <span class="footnote-container" tabindex="0">
+            <span class="footnote-text">[23]</span>
+            <span class="footnote-content">
+                <span class="fn-num">[23]</span> 약 4개월 정도의 접점 이후에 동거가 시작되었다.
+                <span class="fn-close-hint">닫으려면 바깥을 클릭하세요</span>
+            </span>
+        </span>
+    </p>
+</div>
 
-    window.onload = function() { addBottomBox(); updatePreview(); };
+                <details open class="wiki-section" style="margin-left: 8px; margin-top: 15px;">
+                    <summary style="list-style: none; outline: none; cursor: pointer;">
+                        <h4 id="s-3.3.1" class="wiki-heading" style="font-size: 1.3em; font-weight: bold; margin-bottom: 0; display: flex; align-items: center; border: none;">
+                            <span style="color: #0275d8; margin-right: 6px;">3.3.1.</span> 어쩌고 저쩌고
+                            <span class="toggle-text" style="font-size: 0.55em; font-weight: normal; color: #0275d8; margin-left: auto; align-self: flex-end; margin-bottom: -2px;"></span>
+                        </h4>
+                        <hr style="border: 0; height: 1px; background: #ccc; margin: 5px 0 12px 0;">
+                    </summary>
+                    <div style="padding: 0 5px; text-align: justify; line-height: 1.6; font-size: 1em;">
+                        카츠노는 평소 가지 않던 길을 택한 결과를 마주한다. 여태까지 인생에서 제일 후회되는 일 (겸 잘 한 일)을 고르라고 하면 단언컨대 이 순간이라고. 빠른 귀가를 위해 들어선 낯선 골목의 초입은 최악이었다. 발걸음을 옮기던 카츠노는 선혈이 낭자한 골목길에서 실시간으로 사람 목이 썰리는 현장을 실시간 1열 직관하고야 만다.
+                        <br><br>
+                        운동화 앞에 떨어진 핏자국과 골목을 가득 채운 살기와 혈향. 그리고 쇠 비린내까지. 더불어 어둠 속에서 딱 마주친 살기 어린 킬러의 눈을 딱 마주치자 제대로 브레이크가 걸린 것인지 사고 회로가 고장난채 얼었다. 여담이지만 이후 서술된 것에 따르면 일본에도 킬러가 있다는 것을 몰랐다고. 살인 청부업은 필리핀 
+                        <span class="footnote-container" tabindex="0">
+                            <span class="footnote-text">[23]</span>
+                            <span class="footnote-content">
+                                <span class="fn-num">[23]</span> 필리핀 살인 청부는 15만원이라는 것을 알고 늘 계좌에 15만원은 따로 빼두었다.
+                                <span class="fn-close-hint">닫으려면 바깥을 클릭하세요</span>
+                            </span>
+                        </span>
+                        같은 곳만 존재하는 줄 알았다는 후술을 남기기도 했다.
+                        <br><br>
+                        나구모 역시 당황하긴 마찬가지였다. 웬만한 인기척은 다 읽어내는 실력자인 그가, 킬러도 아닌 일반인 고딩 하나가 코앞까지 다가온 것을 눈치채지 못한 것. 나구모는 흥미로운 듯 살기를 거두고 카츠노에게 다가와 얼굴에 튄 혈흔을 손가락으로 닦아주며 시선을 맞춘다. 
+                        <span class="footnote-container" tabindex="0">
+                            <span class="footnote-text">[24]</span>
+                            <span class="footnote-content">
+                                <span class="fn-num">[24]</span> 아무런 죄 없는 일반인, 그것도 어린 학생을 죽이는 건 좀 미안한 일이기도 하고 또 어떻게 보면 자기가 눈치 못 챌 정도로 다가온 아이를 살려두는 것도 마음에 걸리고. 여러모로 변수 덩어리였다. 
+                                <span class="fn-close-hint">닫으려면 바깥을 클릭하세요</span>
+                            </span>
+                        </span>
+                        <br><br>
+                        주머니에서 주사위를 굴리며 계산을 이어가던 나구모는 이후 이어진 카츠노의 말에 당황하며 웃고 만다.
+                        <br><br>
+                        
+                        <div style="padding: 0 3px;">
+                            <div style="border-left: 3px solid #CD7071; background-color: #f9f9f9; padding: 10px 15px; margin-bottom: 15px; font-family: 'Noto Sans JP', sans-serif; font-size: 0.85em; width: auto; max-width: 100%; box-sizing: border-box;">
+                                <details style="cursor: pointer;">
+                                    <summary style="list-style: none; outline: none; line-height: 1.6;">
+                                        <style>summary::-webkit-details-marker { display: none; }</style>
+                                        えっ……ちょっと待って……。顔、良……。え, 好き……
+                                    </summary>
+                                    <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #ddd; color: #666;">
+                                        어라…… 잠깐만…… 얼굴 졸라 내 취향…….
+                                    </div>
+                                </details>    
+                            </div>
+                        </div>
+                        <br>
+                        갑자기 한다는 말이 얼굴이 취향이라는 것도 그렇고 이렇게 죽는 거냐니. 덧붙여 죽일 거면 안 아프게, 그리고 장례식 비용도 해달라는 듣도보도 못한 소리
+                        <span class="footnote-container" tabindex="0">
+                            <span class="footnote-text">[25]</span>
+                            <span class="footnote-content">
+                                <span class="fn-num">[25]</span> 살려달라고 비는 것보다 오늘 급식이 무엇인지 묻는 것 같은 느낌이었다고.
+                                <span class="fn-close-hint">닫으려면 바깥을 클릭하세요</span>
+                            </span>
+                        </span>를 듣고는 한참을 폭소했다. 보통 일반인은 기절하거나 비명을 지르는 것이 다반사일텐데 눈만 굴리며 멍하니 있는 카츠노의 행동이 꽤 흥미로웠는지 나구모는 살짝 고개를 숙여 시선을 맞추고 물었다.
+                        <br><br>
+                        나구모는 주머니에서 굴리던 주사위를 꺼내어 보여주고는 주사위 숫자에 따라서 결정해주겠다고 제안한다. 
+                        <span class="footnote-container" tabindex="0">
+                            <span class="footnote-text">[26]</span>
+                            <span class="footnote-content">
+                                <span class="fn-num">[26]</span> 보통 사람들 같았으면 웬 미친놈한테 잘못 걸렸다며 싹싹 빌고 살려달라고 하는 게 정상인데 카츠노의 얼빠력에 묻히고 만다. 물론 나구모 또한 카츠노가 아니였다면 기회를 줬을 지는 미지수.
+                                <span class="fn-close-hint">닫으려면 바깥을 클릭하세요</span>
+                            </span>
+                        </span> 
+                        나구모의 예상과 달리 나온 숫자는 6. 
+                        <span class="footnote-container" tabindex="0">
+                            <span class="footnote-text">[27]</span>
+                            <span class="footnote-content">
+                                <span class="fn-num">[27]</span> 1부터 5까지는 멀티툴의 무기를 정해두었으나 그날따라 6은 정해두지 않았다고 한다. 요근래 숫자 6이 나오는 횟수가 제로에 수렴했기 때문.
+                                <span class="fn-close-hint">닫으려면 바깥을 클릭하세요</span>
+                            </span>
+                        </span>
+                        <br><br>
+                        어쨌건 약속은 약속이기도 하고. 이정도로 운이 좋은 애라면 자기가 죽이려 들어도 살아남을 것만 같은 기묘한 느낌에 나구모는 특별히 살려주겠다는 말과 함께 생긋 웃고는 골목길 밖으로 카츠노를 데려다 주며 손까지 흔들며 배웅해준다.
+                    </div>
+                </details>
+
+                <details open class="wiki-section" style="margin-left: 8px; margin-top: 15px;">
+                    <summary style="list-style: none; outline: none; cursor: pointer;">
+                        <h4 id="s-3.3.2" class="wiki-heading" style="font-size: 1.3em; font-weight: bold; margin-bottom: 0; display: flex; align-items: center; border: none;">
+                            <span style="color: #0275d8; margin-right: 6px;">3.3.2.</span> 어쩌고 저쩌고
+                            <span class="toggle-text" style="font-size: 0.55em; font-weight: normal; color: #0275d8; margin-left: auto; align-self: flex-end; margin-bottom: -2px;"></span>
+                        </h4>
+                        <hr style="border: 0; height: 1px; background: #ccc; margin: 5px 0 12px 0;">
+                    </summary>
+                    <div style="padding: 0 5px; text-align: justify; line-height: 1.6; font-size: 1em;">
+                        첫 만남 이후 카츠노는 공포심을 느끼기는커녕 오히려 나구모의 외모와 킬러라는 정체에 깊이 매료되는 모습을 보인다. (사실 외모가 절반 이상이었을 것이다.) 일반적인 시민이라면 살인 현장이었던 그 골목을 피하는 것이 상식이겠으나, 카츠노는 정반대로 나구모를 다시 <span style="color: #aaa; text-decoration: line-through;"> 영접하기</span> 만나기 위해 자신의 등하교 루트를 전면 수정한다.
+                        <br><br>
+                        평소 이용하던 안전한 큰길과 대로변을 일절 배제. 인적이 드물고 스산한 뒷골목만을 골라 등하교 루틴을 전면 수정했다. <span style="color: #aaa; text-decoration: line-through;">본격 미남 킬러 찾기 퀘스트</span> 약 일주일 동안 주변 골목을 이 잡듯 뒤졌으나, 프로 킬러인 나구모가 작정하고 흔적을 지우면 일반 고딩 따위가 찾을 수 있을 리 만무했다.
+                        <br><br>
+                        약 일주일 동안 가방을 메고 골목 구석구석을 누볐으나 나구모의 흔적조차 찾지 못하자 아쉬움과 함께 결국 수색을 포기한다.
+                    </div>
+                </details>
+
+                <details open class="wiki-section" style="margin-left: 8px; margin-top: 15px;">
+                    <summary style="list-style: none; outline: none; cursor: pointer;">
+                        <h4 id="s-3.3.3" class="wiki-heading" style="font-size: 1.3em; font-weight: bold; margin-bottom: 0; display: flex; align-items: center; border: none;">
+                            <span style="color: #0275d8; margin-right: 6px;">3.3.3.</span> 어쩌고 또 저쩌고
+                            <span class="toggle-text" style="font-size: 0.55em; font-weight: normal; color: #0275d8; margin-left: auto; align-self: flex-end; margin-bottom: -2px;"></span>
+                        </h4>
+                        <hr style="border: 0; height: 1px; background: #ccc; margin: 5px 0 12px 0;">
+                    </summary>
+                    <div style="padding: 0 5px; text-align: justify; line-height: 1.6; font-size: 1em;">
+                        포기 선언 직후, 아이러니하게도 카츠노는 별생각 없이 들어선 어느 골목에서 입에 포키를 물고 유유히 걸어오는 나구모와 다시 마주친다. 의도적인 추적에는 모습을 드러내지 않다가 정말 일상적이고 평범한 순간에 등장한 것이 포인트. 카츠노는 매우 당황했으나 나구모는 당황하기는커녕 마치 어제 본 친구를 대하듯 <b>어라, 오랜만이네?</b>라며 실없는 소리를 던지며 자연스럽게 다가온다. 이때 두 사람은 서로의 이름도, 나이도, 소속도 모르는 채 오로지 킬러와 일반인이라는 기묘한 관계성만을 공유한 채 대화를 이어가게 된다. 
+                        <span class="footnote-container" tabindex="0">
+                            <span class="footnote-text">[번호]</span>
+                            <span class="footnote-content">
+                                <span class="fn-num">[번호]</span> 그래도 부를 호칭은 필요해서 이름 정도는 공유하자고 했는데 나구모가 첫글자인 な 만 알려주었다. 그래서 굳어진 호칭이 나쨩 (なちゃん)
+                                <span class="fn-close-hint">닫으려면 바깥을 클릭하세요</span>
+                            </span>
+                        </span>
+                        <br><br>
+                        나구모는 자신의 살기에도 쫄지 않고 오히려 자신을 찾아다니는 듯한 카츠노의 행동이 꽤나 흥미로웠던 모양인지, 평소에는 잘 삼지도 않던 직업 정신을 발휘해 뒷조사를 꽤 오랫동안 했던 듯. 그러나 결과는 놀랍게도 특이사항 없음. 어떠한 배후 세력도, 숨겨진 과거도 없는 그저 평범하기 그지없는 평범한 여고생이라는 사실만 확인된다. 오히려 너무 깨끗해서 이상할 정도.        
+                        <span class="footnote-container" tabindex="0">
+                            <span class="footnote-text">[번호]</span>
+                            <span class="footnote-content">
+                                <span class="fn-num">[번호]</span> 카츠노의 추적 동안 보이지 않았던 이유도 이 탓이었던 것으로 보인다. 정보를 털어도 나오는 게 하나 없는 완벽한 무결점의 일반인이라 꽤 오래 조사와 의심을 했던 듯.  
+                                <span class="fn-close-hint">닫으려면 바깥을 클릭하세요</span>
+                            </span>
+                        </span>
+                        <br><br>
+                        보통 이렇게 접점이 생기면 무언가 꿍꿍이가 있기 마련인데, 정말로 순수하게 <b>호기심</b>과 <b>얼빠력</b>만으로 자신에게 접근했다는 사실에 나구모는 신선한 충격을 받는다. 킬러 인생을 통틀어 <b>가장 예상을 빗나가는 존재</b>를 만났다는 생각에 카츠노에 대한 흥미가 더욱 고조되었던 듯.
+                    </div>
+                </details>
+
+                <details open class="wiki-section" style="margin-left: 8px; margin-top: 15px;">
+                    <summary style="list-style: none; outline: none; cursor: pointer;">
+                        <h4 id="s-3.3.4" class="wiki-heading" style="font-size: 1.3em; font-weight: bold; margin-bottom: 0; display: flex; align-items: center; border: none;">
+                            <span style="color: #0275d8; margin-right: 6px;">3.3.4.</span> 어쩌고 또 저쩌고
+                            <span class="toggle-text" style="font-size: 0.55em; font-weight: normal; color: #0275d8; margin-left: auto; align-self: flex-end; margin-bottom: -2px;"></span>
+                        </h4>
+                        <hr style="border: 0; height: 1px; background: #ccc; margin: 5px 0 12px 0;">
+                    </summary>
+                    <div style="padding: 0 5px; text-align: justify; line-height: 1.6; font-size: 1em;">
+                      
+                     어느 날, 카츠노는 나구모를 향해 진짜 구라 안 치고 킬러가 맞냐라는 의구심 가득한 질문을 던진다. 첫만남이 너무 강렬해서 잊기라도 한 건지, 아니면 나구모가 너무 편해진 탓일지. 이에 나구모는 말 대신 메고 있던 자신의 철제 케이스를 열어 그 안에 든 살벌한 무기. 즉, 멀티툴을 직접 확인시켜준다. 일반적인 반응이라면 무기를 보는 순간 겁을 먹어야 정상이었겠지만... 카츠노의 반응은 이번에도 어김없이 나구모의 계산을 완벽히 빗나갔었다. 
+                      <span class="footnote-container" tabindex="0">
+                            <span class="footnote-text">[번호]</span>
+                            <span class="footnote-content">
+                                <span class="fn-num">[번호]</span> 무기의 살상력이나 위험성보다는 정교한 구조와 디자인에 깊은 관심을 보이며 요리조리 뜯어보는 모습에 나구모는 웃음을 터뜨리고 만다. 정말 예상할 수 없다는 것이 그 이유. 
+                                <span class="fn-close-hint">닫으려면 바깥을 클릭하세요</span>
+                            </span>
+                        </span>
+                      <br><br>
+                      
+                      이 사건을 계기로 두 사람 사이의 거리는 점차 좁혀지기 시작한다. 매일 만나는 것은 아니지만, 서로 약속이라도 한 듯 주에 2회 꼴로 골목길에서 조우하는 일종의 정기적인 만남이 형성된다. 주로 길고양이에게 밥을 챙겨주거나 나란히 과자를 까먹으며 시시콜콜한 대화를 나누는 정도.
+                      <span class="footnote-container" tabindex="0">
+                            <span class="footnote-text">[번호]</span>
+                            <span class="footnote-content">
+                                <span class="fn-num">[번호]</span> 동물 쪽에서 나구모를 따르지 않는 성향 때문에 카츠노 쪽에만 고양이들이 몰리는 신기한 광경을 볼 수 있었다. 나구모가 손만 뻗으면 하악질을 해대는 경우가 허다했다는 이야기가 아직까지 카츠노를 통해 종종 언급되곤 한다.
+                                <span class="fn-close-hint">닫으려면 바깥을 클릭하세요</span>
+                            </span>
+                        </span>
+                      <br><br>
+                      나구모는 매번 자신의 예상을 뛰어넘는 카츠노의 반응을 즐기기 시작하고, 카츠노는 나구모를 일종의 희귀한 미남 정도로 인식하며 스스럼없이 대하게 된다. 내적 거리가 많이 좁혀졌다고 보기엔 어렵지만 킬러와 일반인이라는 경계선 자체는 조금 흐려진 계기가 되었다. 서로의 세계에 발을 들이기 직전의 아슬아슬한 탐색전. 
+                    </div>
+                </details>
+
+                <details open class="wiki-section" style="margin-left: 8px; margin-top: 15px;">
+                    <summary style="list-style: none; outline: none; cursor: pointer;">
+                        <h4 id="s-3.3.4" class="wiki-heading" style="font-size: 1.3em; font-weight: bold; margin-bottom: 0; display: flex; align-items: center; border: none;">
+                            <span style="color: #0275d8; margin-right: 6px;">3.3.4.</span> 어쩌고 또 저쩌고
+                            <span class="toggle-text" style="font-size: 0.55em; font-weight: normal; color: #0275d8; margin-left: auto; align-self: flex-end; margin-bottom: -2px;"></span>
+                        </h4>
+                        <hr style="border: 0; height: 1px; background: #ccc; margin: 5px 0 12px 0;">
+                    </summary>
+                    <div style="padding: 0 5px; text-align: justify; line-height: 1.6; font-size: 1em;">
+                      
+                     어느 날, 카츠노는 나구모를 향해 진짜 구라 안 치고 킬러가 맞냐라는 의구심 가득한 질문을 던진다. 첫만남이 너무 강렬해서 잊기라도 한 건지, 아니면 나구모가 너무 편해진 탓일지. 이에 나구모는 말 대신 메고 있던 자신의 철제 케이스를 열어 그 안에 든 살벌한 무기. 즉, 멀티툴을 직접 확인시켜준다. 일반적인 반응이라면 무기를 보는 순간 겁을 먹어야 정상이었겠지만... 카츠노의 반응은 이번에도 어김없이 나구모의 계산을 완벽히 빗나갔었다. 
+                      <span class="footnote-container" tabindex="0">
+                            <span class="footnote-text">[번호]</span>
+                            <span class="footnote-content">
+                                <span class="fn-num">[번호]</span> 무기의 살상력이나 위험성보다는 정교한 구조와 디자인에 깊은 관심을 보이며 요리조리 뜯어보는 모습에 나구모는 웃음을 터뜨리고 만다. 정말 예상할 수 없다는 것이 그 이유. 
+                                <span class="fn-close-hint">닫으려면 바깥을 클릭하세요</span>
+                            </span>
+                        </span>
+                      <br><br>
+                      
+                      이 사건을 계기로 두 사람 사이의 거리는 점차 좁혀지기 시작한다. 매일 만나는 것은 아니지만, 서로 약속이라도 한 듯 주에 2회 꼴로 골목길에서 조우하는 일종의 정기적인 만남이 형성된다. 주로 길고양이에게 밥을 챙겨주거나 나란히 과자를 까먹으며 시시콜콜한 대화를 나누는 정도.
+                      <span class="footnote-container" tabindex="0">
+                            <span class="footnote-text">[번호]</span>
+                            <span class="footnote-content">
+                                <span class="fn-num">[번호]</span> 동물 쪽에서 나구모를 따르지 않는 성향 때문에 카츠노 쪽에만 고양이들이 몰리는 신기한 광경을 볼 수 있었다. 나구모가 손만 뻗으면 하악질을 해대는 경우가 허다했다는 이야기가 아직까지 카츠노를 통해 종종 언급되곤 한다.
+                                <span class="fn-close-hint">닫으려면 바깥을 클릭하세요</span>
+                            </span>
+                        </span>
+                      <br><br>
+                      나구모는 매번 자신의 예상을 뛰어넘는 카츠노의 반응을 즐기기 시작하고, 카츠노는 나구모를 일종의 희귀한 미남 정도로 인식하며 스스럼없이 대하게 된다. 내적 거리가 많이 좁혀졌다고 보기엔 어렵지만 킬러와 일반인이라는 경계선 자체는 조금 흐려진 계기가 되었다. 서로의 세계에 발을 들이기 직전의 아슬아슬한 탐색전. 
+                      
+                  </div>
+                </details>
+
+                <details open class="wiki-section" style="margin-left: 8px; margin-top: 15px;">
+                    <summary style="list-style: none; outline: none; cursor: pointer;"><h4 id="s-3.3.5" class="wiki-heading" style="font-size: 1.3em; font-weight: bold; margin-bottom: 0; display: flex; align-items: center; border: none;"><span style="color: #0275d8; margin-right: 6px;">3.3.5.</span> 어쩌고 또 저쩌고<span class="toggle-text" style="font-size: 0.55em; font-weight: normal; color: #0275d8; margin-left: auto; align-self: flex-end; margin-bottom: -2px;"></span></h4><hr style="border: 0; height: 1px; background: #ccc; margin: 5px 0 12px 0;"></summary>
+                    <div style="padding: 0 5px; text-align: justify; line-height: 1.6; font-size: 1em;">
+
+첫 만남 이후 약 3개월 동안 두 사람은 정의하기 어려운 오묘한 관계를 유지한다. 나구모는 살연(JAA)에서 내려온 연이은 임무 수행으로, 카츠노는 시험과 아르바이트 스케줄로 인해 물리적인 여유가 급격히 줄어들게 되면서 서로의 일상이 극도로 바빠졌기 때문.
+                         <span class="footnote-container" tabindex="0">
+                            <span class="footnote-text">[번호]</span>
+                            <span class="footnote-content">
+                                <span class="fn-num">[번호]</span> 철저히 운과 타이밍에 의존한 방식. 엇갈린 적이 꽤 많았을 법도 한데 그러나 의외로 못 만난 적은 거의 없었다. 
+                                <span class="fn-close-hint">닫으려면 바깥을 클릭하세요</span>
+                            </span>
+                        </span>
+                      
+<br><br>
+가장 큰 특징은 두 사람이 서로의 연락처조차 교환하지 않은 상태였다는 점이다. 나구모는 직업 특성상 자신의 정보를 남기는 것에 신중했고 카츠노는 그냥 교환할 생각도 못 했다. 현대적인 연락 수단이 전무했기에, 만남은 어느 한 쪽이 시간이 날 때 무작정 골목길을 찾아갔다가 상대가 없으면 그대로 돌아오는 지극히 아날로그적이고 비효율적인 방식으로 지속되었다.  
+                  </div>
+                </details>
+
+              
+              
+                <details open class="wiki-section" style="margin-left: 8px; margin-top: 15px;">
+                    <summary style="list-style: none; outline: none; cursor: pointer;"><h4 id="s-3.3.6" class="wiki-heading" style="font-size: 1.3em; font-weight: bold; margin-bottom: 0; display: flex; align-items: center; border: none;"><span style="color: #0275d8; margin-right: 6px;">3.3.6.</span> 어쩌고 또 저쩌고<span class="toggle-text" style="font-size: 0.55em; font-weight: normal; color: #0275d8; margin-left: auto; align-self: flex-end; margin-bottom: -2px;"></span></h4><hr style="border: 0; height: 1px; background: #ccc; margin: 5px 0 12px 0;"></summary>
+                    <div style="padding: 0 5px; text-align: justify; line-height: 1.6; font-size: 1em;">
+                      
+                      약 3개월 간의 공백기 끝에 이루어진 재회는 한겨울의 매서운 칼바람이 몰아치던 날, 어김없이 같은 골목길에서 이루어졌다. 임무를 마치고 귀가하던 나구모는 평소 카츠노를 마주치던 장소에서 뜻밖의 광경을 목격한다.
+<br><br>
+당연히 약속을 한 것도 아니었고 더군다나 이런 늦은 시간에는 당연히 없을 것이라는 생각에 아쉬운 단념을 품고 지나치려 했으나 그날따라 유독 변덕을 부리고 싶었다고. 
+<br><br>
+인적이 끊긴 차가운 아스팔트 위, 지저분하게 쌓인 박스 더미 사이에 익숙한 실루엣이 파묻혀 있었던 것. 누가 봐도 카츠노임이 분명한 머리통이 보였으나 그것도 한겨울에 - 이런 곳에서 - 도대체 왜? - 평소 보던 모습과 다른 행색에 나구모는 흥미와 의구심을 품으며 다가간다. 
+<br><br>
+특유의 여유로운 태도로 무릎을 굽혀 쪼그려 앉은 채 카츠노와 시선을 맞추고는 "오랜만이네~" 라며 평소처럼 능글맞은 인사를 건네자, 무릎에 고개를 파묻고 있던 카츠노가 천천히 고개를 들었다. 그리고 3개월 만에 마주한 킬러를 향해 코를 훌쩍이며 내뱉은 첫마디가 가히 압권.
+<br><br>
+
+<div style="padding: 0 3px;">
+                            <div style="border-left: 3px solid #CD7071; background-color: #f9f9f9; padding: 10px 15px; margin-bottom: 15px; font-family: 'Noto Sans JP', sans-serif; font-size: 0.85em; width: auto; max-width: 100%; box-sizing: border-box;">
+                                <details style="cursor: pointer;">
+                                    <summary style="list-style: none; outline: none; line-height: 1.6;">
+                                        <style>summary::-webkit-details-marker { display: none; }</style>
+······わ、イケメン供給、やばい 。
+                                    </summary>
+                                    <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #ddd; color: #666;">
+
+······와, (훌쩍) 미남 복지, (훌쩍) 지리네. 
+                                    </div>
+                                </details>    
+                            </div>
+                        </div>
+                       
+                      추위에 훌쩍이면서도눈앞의 미형(美形) <span style="color: #999; text-decoration: line-through;">이자 제 완식 취향</span> 인 나구모를 보고 본능적인 감탄사를 내뱉는다. 이후 언급에 따르면 자기 얼굴을 좋아하는 사람은 자주 봐왔지만 이런 상황에서도 이런 말을 하는 건 카츠노가 최초였다고. 나구모 역시 이 황당한 반응에 잠시 당황하면서도, 카츠노의 옆에 놓인 짐 꾸러미들을 신속하게 스캔하며 상황 파악에 들어간다.
+
+                  </div>
+                </details>
+              
+              
+              
+              
+              
+                <details open class="wiki-section" style="margin-left: 8px; margin-top: 15px;">
+                    <summary style="list-style: none; outline: none; cursor: pointer;"><h4 id="s-3.3.7" class="wiki-heading" style="font-size: 1.3em; font-weight: bold; margin-bottom: 0; display: flex; align-items: center; border: none;"><span style="color: #0275d8; margin-right: 6px;">3.3.7.</span> 어쩌고 또 저쩌고<span class="toggle-text" style="font-size: 0.55em; font-weight: normal; color: #0275d8; margin-left: auto; align-self: flex-end; margin-bottom: -2px;"></span></h4><hr style="border: 0; height: 1px; background: #ccc; margin: 5px 0 12px 0;"></summary>
+                    <div style="padding: 0 5px; text-align: justify; line-height: 1.6; font-size: 1em;">
+                      
+                                         <br>
+<div style="padding: 0 3px;">
+                            <div style="border-left: 3px solid #CD7071; background-color: #f9f9f9; padding: 10px 15px; margin-bottom: 15px; font-family: 'Noto Sans JP', sans-serif; font-size: 0.85em; width: auto; max-width: 100%; box-sizing: border-box;">
+                                <details style="cursor: pointer;">
+                                    <summary style="list-style: none; outline: none; line-height: 1.6;">
+                                        <style>summary::-webkit-details-marker { display: none; }</style>
+ナグモ: んー、家出少女……ってところか？
+<br>
+カツノ: 違うわよ！ 詐欺に遭って家を失った、可哀想な女の子なんだから！
+
+                                    </summary>
+                                    <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #ddd; color: #666;">
+
+나구모: 으음, 가출 청소년? 
+                                      <br>
+카츠노: 아니거든! 전세 사기 당한 비운의 청소년이란 말이야!
+                                    </div>
+                                </details>    
+                            </div>
+                        </div>
+                  
+                  나구모는 정황상 카츠노가 당연히 가출을 했을 것이라 짐작했으나 카츠노에게서 돌아온 답변은 전세 사기라는 말이었다. 역시나 판단을 빗나가는 답변에 웃음을 삼킨 나구모는 그제야 주변에 깔린 박스 더미가 모두 카츠노의 것이라는 것을 알아챈다. 
+<br><br>
+이유를 구태여 자세하게 캐묻지 않으면서도 상황을 완벽히 이해한 나구모는 묘한 심리적 변화를 느낀다. 이 날씨에 여자애를 길바닥에 내버려 두기엔 공들여 발견하고 길들여온 '흥미로운 장난감'을 허무하게 잃어버리는 것 같아 아쉬운 마음이 들었던 것. 단순히 유희적인 목적뿐만 아니라 스스로도 형용하기 어려운 이상하고 묘한 감정이 섞이면서 나구모는 평소의 계산적인 면모답지 않게 본인도 모르게 냅다 파격적인 제안을 던지게 된다.
+                      
+                      <span class="footnote-container" tabindex="0">
+                            <span class="footnote-text">[번호]</span>
+                            <span class="footnote-content">
+                                <span class="fn-num">[번호]</span> 후일담에 따르면 나구모가 자기 집으로 가자는 말을 내뱉었을 때 카츠노는 2PM의 우리집으로 가자 bgm이 자동 재생되는 줄 알았다는 이야기를 언급한 바가 있다. 
+                                <span class="fn-close-hint">닫으려면 바깥을 클릭하세요</span>
+                            </span>
+                        </span>
+                  </div>
+                </details>
+              
+              
+              
+                <details open class="wiki-section" style="margin-left: 8px; margin-top: 15px;">
+                    <summary style="list-style: none; outline: none; cursor: pointer;"><h4 id="s-3.3.8" class="wiki-heading" style="font-size: 1.3em; font-weight: bold; margin-bottom: 0; display: flex; align-items: center; border: none;"><span style="color: #0275d8; margin-right: 6px;">3.3.8.</span> 어쩌고 저쩌고<span class="toggle-text" style="font-size: 0.55em; font-weight: normal; color: #0275d8; margin-left: auto; align-self: flex-end; margin-bottom: -2px;"></span></h4><hr style="border: 0; height: 1px; background: #ccc; margin: 5px 0 12px 0;"></summary>
+                    <div style="padding: 0 5px; text-align: justify; line-height: 1.6; font-size: 1em;">
+                      전세 사기를 당한 비운의 소녀였던 카츠노에겐 당장의 추위와 금전 문제에서 벗어날 수 있는 유일한 구원이었으므로, 당장 먹고 살기에 급급했던 카츠노는 나구모의 제안을 받아들이게 되고 얼떨결에 짐을 싸들고 킬러의 집에 얹혀 살게 된다. 
+
+
+<span class="footnote-container" tabindex="0">
+                            <span class="footnote-text">[번호]</span>
+                            <span class="footnote-content">
+                                <span class="fn-num">[번호]</span> 킬러와 소녀의 기묘한 동거 시작의 발화점. 이후에 종종 해당 날짜를 기점으로 작은 파티를 열기도 한다. 전적으로 카츠노의 의견. 카츠노는 이 날을 자신의 두 번째 생일로 여기기도 한다.                                
+<span class="fn-close-hint">닫으려면 바깥을 클릭하세요</span>
+                            </span> 
+                      </span>
+<br><br>
+              좁고 좁은 신주쿠의 단칸방에 살다가 도쿄 미나토구의 고급 맨션, 그것도 펜트하우스에서 살게 된 카츠노는 얼떨떨해 하며 금방 나가겠다고 했으나 나구모의 만류와 회유 탓에 반강제적 셧다운. 월세라도 내겠다던 다짐 또한 하루 아침에 물거품이 되고 만다.      <span class="footnote-container" tabindex="0">
+                            <span class="footnote-text">[번호]</span>
+                            <span class="footnote-content">
+                                <span class="fn-num">[번호]</span> 월세와 수도세, 관리비는 내겠다면서 알바비를 긁어 모아 나구모에게 내밀었는데 나구모는 그걸 그대로 카츠노의 새로운 통장을 개설시킨 뒤 그곳에 홀라당 넣어버렸다. 이후 학교 전학 수속과 새 휴대폰 개통까지 일사천리로 진행하는 바람에 카츠노는 그대로 휩쓸리고 말았다는 후기가 있다. <span style="color: #999; text-decoration: line-through;">애면 애답게 굴어</span>                               
+<span class="fn-close-hint">닫으려면 바깥을 클릭하세요</span>
+                            </span> 
+                      </span>
+                      
+                      <br><br>
+킬러의 단순한 흥미로 시작된 관계는 어느덧 익숙함을 넘어 일상이 되어버렸다. 평생 정의할 수 없는 킬러와 일반인의 경계는 매일 아침 정장을 갖춰 입고 무기를 들고 출근하는 킬러 남자와 고데기로 야무지게 머리를 피고 단정한 교복에 책이 가득한 가방을 들고 함께 등교하는 일반인 소녀로 인해 점차 흐려지고 있다. 
+                  </div>
+                </details>
+            </details>
+
+    <details open class="wiki-section" style="margin-left: 8px; margin-bottom: 25px;">
+    <summary style="list-style: none; outline: none; cursor: pointer;">
+        <h3 id="s-3.4" class="wiki-heading" style="font-size: 1.4em; font-weight: bold; margin-bottom: 0; display: flex; align-items: center; border: none;">
+            <span style="color: #0275d8; margin-right: 6px;">3.4.</span> 에피소드 1
+            <span class="toggle-text" style="font-size: 0.55em; font-weight: normal; color: #0275d8; margin-left: auto; align-self: flex-end; margin-bottom: -2px;"></span>
+        </h3>
+        <hr style="border: 0; height: 1px; background: #ccc; margin: 5px 0 12px 0;">
+    </summary>
+    
+    <div style="padding: 0 5px; text-align: justify; word-break: break-all; line-height: 1.6; font-size: 1em;">
+    <img src="https://i.postimg.cc/2SJVR9QY/hwamyeon-kaebcheo-2026-03-28-024832.png" alt="나노" style="width: 100%; max-width: 400px; height: auto; border: 1px solid #ddd; border-radius: 8px;">
+    <p style="font-size: 0.8em; color: #888; margin-top: 2px; margin-left: 2px; margin-bottom: 0;"> ⓒ zecol </p>
+    
+    <div style="height: 10px;"></div>
+    
+    <p style="margin: 0;">
+동거 이후 몇 달은 약간의 거리감이 존재했다.
+                        <span class="footnote-container" tabindex="0">
+                            <span class="footnote-text">[번호]</span>
+                            <span class="footnote-content">
+                                <span class="fn-num">[번호]</span> 아무래도 카츠노는 나구모의 충동적인 호의라고 생각했고 몇 주 뒤에는 나가야 할 것이라고 생각했던 것 같다. 비유하자면 고양이 임시 보호 정도. 나구모를 온전히 믿지 못했던 시기였기에 거리감이 많았을 수 밖에 없었던 듯 <span style="color: #999; text-decoration: line-through;">길고양이 습성</span>
+                                <span class="fn-close-hint">닫으려면 바깥을 클릭하세요</span>
+                            </span>
+                        </span>
+                        그러나 알바 마감 타임이 잦은 카츠노를 위해 나구모가 말도 없이 퇴근길 마중을 나오기 시작하며 관계가 급진전된다. 
+              </p>
+                </div>         
+                       
+      
+      <details open class="wiki-section" style="margin-left: 8px; margin-top: 15px;">
+                    <summary style="list-style: none; outline: none; cursor: pointer;">
+                        <h4 id="s-3.4.1" class="wiki-heading" style="font-size: 1.3em; font-weight: bold; margin-bottom: 0; display: flex; align-items: center; border: none;">
+                            <span style="color: #0275d8; margin-right: 6px;">3.4.1.</span> 어쩌고 저쩌고
+                            <span class="toggle-text" style="font-size: 0.55em; font-weight: normal; color: #0275d8; margin-left: auto; align-self: flex-end; margin-bottom: -2px;"></span>
+                        </h4>
+                        <hr style="border: 0; height: 1px; background: #ccc; margin: 5px 0 12px 0;">
+                    </summary>
+                    <div style="padding: 0 5px; text-align: justify; line-height: 1.6; font-size: 1em;">
+      애초에 카츠노가 알바 장소나 마치는 시간을 알려준 적이 없던 터라, 가게 앞에서 쌀포대 같은 코트를 입고 메탈백을 멘 채 서 있는 나구모를 보고 꽤 많이 당황했었다. 
+                        <span class="footnote-container" tabindex="0">
+                            <span class="footnote-text">[번호]</span>
+                            <span class="footnote-content">
+                                <span class="fn-num">[번호]</span> 후일담에 따르면 자기를 미행한 것 아니냐고 따졌는데 나구모는 당당하게 카츠노의 휴대폰에 위치 추적 어플을 깔아두었다고 답했다. 
+                                <span class="fn-close-hint">닫으려면 바깥을 클릭하세요</span>
+                            </span>
+                        </span>
+                        누군가 자신을 데리러 온다는 경험 자체가 생소했던 카츠노는 쭈뼛대며 불편해하지만, 나구모는 특유의 눈치 빠르고 능구렁이 같은 성격으로 자연스럽게 가방을 건네받으며 대화를 유도한다.
+                        <br><br>    
+                        나구모의 일방적인 다정에 카츠노의 벽이 허물어지는 데는 채 2주가 걸리지 않았다. 자신을 배려해 보폭을 맞추고, 시시콜콜한 농담으로 긴장을 풀어주는 나구모의 페이스에 휘말린 것. <span style="color: #999; text-decoration: line-through;">(물론 잘생긴 얼굴도 한몫했을 것이다.)</span> 추운 날씨에 따뜻한 음료를 사 오거나 입에 포키를 물려주며 고양이 길들이듯 살살 구슬리는 장면이 압권.
+                        <br><br>    
+                        약 한 달 차에 접어들자, 마중은 더 이상 이벤트가 아닌 당연한 일과가 된다. 추운 날씨에도 얼죽아를 고집하는 카츠노에게 나구모가 따뜻한 커피를 쥐여주며 투닥거리는 모습은 이 시기 이들의 관계를 보여주는 상징적인 장면. 툴툴거리면서도 나구모가 건네는 간식을 거절하지 않고, 그가 맞춰주는 느릿한 보폭에 자연스럽게 발을 맞추게 된 시점에서 카츠노의 방어선은 사실상 무너진 것으로 평가되는 부분이다.
+                    </div>
+                </details>
+
+                <details open class="wiki-section" style="margin-left: 8px; margin-top: 15px;">
+                    <summary style="list-style: none; outline: none; cursor: pointer;">
+                        <h4 id="s-3.4.2" class="wiki-heading" style="font-size: 1.3em; font-weight: bold; margin-bottom: 0; display: flex; align-items: center; border: none;">
+                            <span style="color: #0275d8; margin-right: 6px;">3.4.2.</span> 어쩌고 저쩌고
+                            <span class="toggle-text" style="font-size: 0.55em; font-weight: normal; color: #0275d8; margin-left: auto; align-self: flex-end; margin-bottom: -2px;"></span>
+                        </h4>
+                        <hr style="border: 0; height: 1px; background: #ccc; margin: 5px 0 12px 0;">
+                    </summary>
+                    <div style="padding: 0 5px; text-align: justify; line-height: 1.6; font-size: 1em;">
+ 단순히 집이라는 개념을 넘어 카츠노가 스스로의 방어 기제를 해제하고 '타인의 세계'로 진입하는 심리적 완충 지대로 묘사된다. 단순히 겉으로만 보면 관계성의 발전이지만, 워낙 타인에게 기대기 어려워하며 곁을 내어주기를 싫어했던 이전 카츠노의 모습과 다르게 처음으로 타인에게 제 곁을 내어주고 타인의 세계에 진입했다는 점에서 하나의 성장을 보여주기도. 
+                        <br><br> 
+                        초반에는 자신의 신발을 구석 끄트머리에 치워두었던 카츠노였으나, 이 계기 이후 나구모의 커다란 구두 옆에 자신의 작은 로퍼를 가지런히 정돈해 두는 변화를 보인다. 
+                        <span class="footnote-container" tabindex="0">
+                            <span class="footnote-text">[번호]</span>
+                            <span class="footnote-content">
+                                <span class="fn-num">[번호]</span> 나구모가 카츠노와 동거 이후 준 두 번째 선물. 나구모가 신는 구두와 같은 브랜드의 제품으로 나란히 놓인 두 신발에서 나구모와 카츠노의 물리적 정서적 거리감이 대폭 줄여졌음을 보여주는 상징적인 장치로도 언급되곤 한다.
+                                <span class="fn-close-hint">닫으려면 바깥을 클릭하세요</span>
+                            </span>
+                        </span>
+                        외출 후 집으로 돌아올 때마다 이 모습을 확인하며 무의식적으로 안도감을 느끼는 경우도 종종 보이는 듯.  
+                        <br><br> 
+                        일방적인 다정함이 카츠노에게 범람하고 녹아들어 일상이 되면서, 카츠노에게는 혼자 살던 시절에는 상상도 못 했던 귀가 인사라는 습관이 생겼다. 초반에는 거의 들리지 않을 정도로 작게 중얼거리는 수준이었으나, 나구모와의 거리가 좁혀지면서 점차 자연스러운 일상의 소음으로 자리 잡았다. 카츠노에게 있어 이 인사는 상대에게 건네는 말인 동시에, 스스로에게 여기가 내가 돌아올 곳이 맞다라는 확신을 심어주는 말에 가깝다. 작은 웅얼거림에 가까웠던 소리에도 어서 와라며 화답해주는 나구모의 말 또한 많은 도움이 됐던 듯. 결국 나구모로 인해 집의 정의와 개념이 새로 재정립된 셈. 
+                        <span class="footnote-container" tabindex="0">
+                            <span class="footnote-text">[번호]</span>
+                            <span class="footnote-content">
+                                <span class="fn-num">[번호]</span> 그러나 아직 나아가지 못한 부분도 있다. 정서적 동화가 상당히 진행되었음에도 불구하고, 카츠노가 끝내 밖으로 내뱉지 못하는 문장이 바로 "언제 와?" 또는 "지금 어디야?" 같은 상대의 행방을 묻는 말이다. 자신에게 베풀어지는 다정은 수용할 수 있게 되었으나, 자신이 먼저 나구모의 사적인 시간이나 영역에 관여하는 것은 아직 은연 중에 어려워하는 듯 보이는 장면이 종종 있다. 물론 후반부에 접어들고 나서는 자주는 아니나 종종 조심스럽게 묻는 순간도 생겼다. <span class="fn-close-hint">닫으려면 바깥을 클릭하세요</span>
+                            </span>
+                        </span>
+                    </div>
+                </details>
+            </details>
+
+           <details open class="wiki-section" style="margin-left: 8px; margin-bottom: 25px;">
+    <summary style="list-style: none; outline: none; cursor: pointer;">
+        <h3 id="s-3.5" class="wiki-heading" style="font-size: 1.4em; font-weight: bold; margin-bottom: 0; display: flex; align-items: center; border: none;">
+            <span style="color: #0275d8; margin-right: 6px;">3.5.</span> 에피소드 2
+            <span class="toggle-text" style="font-size: 0.55em; font-weight: normal; color: #0275d8; margin-left: auto; align-self: flex-end; margin-bottom: -2px;"></span>
+        </h3>
+        <hr style="border: 0; height: 1px; background: #ccc; margin: 5px 0 12px 0;">
+    </summary>
+<div style="padding: 0 5px; text-align: justify; word-break: break-all; line-height: 1.6; font-size: 1em;">
+    <img src="https://i.postimg.cc/GmP2MbHK/sincheong-yongnim-3.jpg" alt="나노" style="width: 100%; max-width: 400px; height: auto; border: 1px solid #ddd; border-radius: 8px;">
+    <p style="font-size: 0.8em; color: #888; margin-top: 2px; margin-left: 2px; margin-bottom: 0;"> ⓒ zecol </p>
+    
+    <div style="height: 10px;"></div>
+    
+    <p style="margin: 0;">텍스트</p>
+</div>
+</details>
+
+            <details open class="wiki-section" style="margin-left: 8px; margin-bottom: 25px;">
+                <summary style="list-style: none; outline: none; cursor: pointer;">
+                    <h3 id="s-3.6" class="wiki-heading" style="font-size: 1.4em; font-weight: bold; margin-bottom: 0; display: flex; align-items: center; border: none;">
+                        <span style="color: #0275d8; margin-right: 6px;">3.6.</span> 현재 (본편 시점)
+                        <span class="toggle-text" style="font-size: 0.55em; font-weight: normal; color: #0275d8; margin-left: auto; align-self: flex-end; margin-bottom: -2px;"></span>
+                    </h3>
+                    <hr style="border: 0; height: 1px; background: #ccc; margin: 5px 0 12px 0;">
+                </summary>
+                
+                <div style="padding: 0 5px; text-align: justify; word-break: break-all; line-height: 1.6; font-size: 1em;">
+                    <p style="margin: 0 0 15px 0;">
+
+본편 시점. 아무래도 일반인인지라 딱히 잦은 등장은 없으며 나오는 경우도 전부 나구모와 함께 나오는지라 나구모의 분량에 따라 결정된다. 확실히 킬러들의 세계관에 직접적으로 개입하는 인물이 아닌 일반인인지라 비중은 생각보다 작다.
+</p>
+                </div>
+
+                <details open class="wiki-section" style="margin-left: 8px; margin-top: 15px;">
+                    <summary style="list-style: none; outline: none; cursor: pointer;">
+                        <h4 id="s-3.6.1" class="wiki-heading" style="font-size: 1.3em; font-weight: bold; margin-bottom: 0; display: flex; align-items: center; border: none;">
+                            <span style="color: #0275d8; margin-right: 6px;">3.6.1.</span> 첫 등장
+                            <span class="toggle-text" style="font-size: 0.55em; font-weight: normal; color: #0275d8; margin-left: auto; align-self: flex-end; margin-bottom: -2px;"></span>
+                        </h4>
+                        <hr style="border: 0; height: 1px; background: #ccc; margin: 5px 0 12px 0;">
+                    </summary>
+                    <div style="padding: 0 5px; text-align: justify; line-height: 1.6; font-size: 1em;">
+                  3화에서 사카모토에게 10억의 현상금이 걸렸다고 알려주고 현상금을 노리고 온 피자 배달부로 위장한 킬러를 순식간에 제압하고 돌아가던 나구모에게 걸려온 전화의 발신인이 카츠노였다. 비중있게 나온 편도 아니고 짤막하게 몇 마디 정도가 끝. 보너스 컷에만 짧게 나온 편이긴 하지만 공식적인 첫 등장은 해당 편이 처음.
+
+                    </div>
+                </details>
+
+                <details open class="wiki-section" style="margin-left: 8px; margin-top: 15px;">
+                    <summary style="list-style: none; outline: none; cursor: pointer;">
+                        <h4 id="s-3.6.2" class="wiki-heading" style="font-size: 1.3em; font-weight: bold; margin-bottom: 0; display: flex; align-items: center; border: none;">
+                            <span style="color: #0275d8; margin-right: 6px;">3.6.2.</span> 유원지 편
+                            <span class="toggle-text" style="font-size: 0.55em; font-weight: normal; color: #0275d8; margin-left: auto; align-self: flex-end; margin-bottom: -2px;"></span>
+                        </h4>
+                        <hr style="border: 0; height: 1px; background: #ccc; margin: 5px 0 12px 0;">
+                    </summary>
+                    <div style="padding: 0 5px; text-align: justify; line-height: 1.6; font-size: 1em;">
+                         나구모가 사카모토 일행과 조우를 끝내고 돌아가던 길에 유원지 앞에서 만나게 된다. 의도적인 만남은 아니었고, 친구들과 유원지에서 놀다가 돌아가려던 찰나 나구모와 우연찮게 만났다. 우연도 무슨 이런 우연이 다 있냐면서 카츠노는 나구모가 자신을 미행한 것이 아니냐고 말했으나 사실 반 정도는 그게 맞았다. 
+                        <span class="footnote-container" tabindex="0">
+                            <span class="footnote-text">[번호]</span>
+                            <span class="footnote-content">
+                                <span class="fn-num">[번호]</span> 나구모의 폰에 카츠노의 위치를 확인할 수 있는 GPS가 있었기에 카츠노의 대략적인 위치는 파악하기 쉬웠다. 종종 이렇게 확인을 하는 편. 나름대로 보호자로서의 자각이 있는 것 같기도.
+                                <span class="fn-close-hint">닫으려면 바깥을 클릭하세요</span>
+                            </span>
+                        </span>
+                        잔뜩 투덜대는 카츠노를 간만에 밖에서 외식이나 하자는 말로 달래며 상황은 일단락 된다. 
+                        <br><br>
+                        이때 사카모토 일행과 인사를 나누려고 했으나 나구모가 카츠노를 제 덩치로 숨기며 카츠노를 사카모토 일행에게 노출 시키지 않았다. 이유는 아직까지 불명.
+                    </div>
+                </details>
+
+                <details open class="wiki-section" style="margin-left: 8px; margin-top: 15px;">
+                    <summary style="list-style: none; outline: none; cursor: pointer;">
+                        <h4 id="s-3.6.3" class="wiki-heading" style="font-size: 1.3em; font-weight: bold; margin-bottom: 0; display: flex; align-items: center; border: none;">
+                            <span style="color: #0275d8; margin-right: 6px;">3.6.3.</span> 사형수 편
+                            <span class="toggle-text" style="font-size: 0.55em; font-weight: normal; color: #0275d8; margin-left: auto; align-self: flex-end; margin-bottom: -2px;"></span>
+                        </h4>
+                        <hr style="border: 0; height: 1px; background: #ccc; margin: 5px 0 12px 0;">
+                    </summary>
+                    <div style="padding: 0 5px; text-align: justify; line-height: 1.6; font-size: 1em;">
+                       45-46화에서 사카모토의 부탁으로 사카모토 상점에서 사카모토 아오이의 행세를 하며 가게를 지키고 있다가 미니멀리스트를 끔살한 나구모를 찾으러 사카모토 상점을 들렸다. 처음 사카모토 상점에 들렸는데 묘한 혈향과 스산한 분위기에 겁먹고 밖에서 10분을 서성였다는 후문이 있다. 그러나 들어서자마자 보이는 난장판이 된 가게와 여유로운 나구모의 웃음을 보고 한가득 잔소리한다. 
+                        <span style="color: #999; text-decoration: line-through;">밀감 통조림 회유에 넘어간 것은 비밀.</span>
+                        <span class="footnote-container" tabindex="0">
+                            <span class="footnote-text">[번호]</span>
+                            <span class="footnote-content">
+                                <span class="fn-num">[번호]</span>이후에 미니멀리스트를 살해한 후 멀티툴로 개봉한 통조림임을 깨닫고 한동안 통조림은 쳐다도 보지 않았다.위생관념을 도대체 어디다 팔아 먹은 거냐며 혼냈다.
+                                <span class="fn-close-hint">닫으려면 바깥을 클릭하세요</span>
+                            </span>
+                        </span>
+                    </div>
+                </details>
+
+                <details open class="wiki-section" style="margin-left: 8px; margin-top: 15px;">
+                    <summary style="list-style: none; outline: none; cursor: pointer;">
+                        <h4 id="s-3.6.4" class="wiki-heading" style="font-size: 1.3em; font-weight: bold; margin-bottom: 0; display: flex; align-items: center; border: none;">
+                            <span style="color: #0275d8; margin-right: 6px;">3.6.4.</span> JCC 잠입 및 교토 편
+                            <span class="toggle-text" style="font-size: 0.55em; font-weight: normal; color: #0275d8; margin-left: auto; align-self: flex-end; margin-bottom: -2px;"></span>
+                        </h4>
+                        <hr style="border: 0; height: 1px; background: #ccc; margin: 5px 0 12px 0;">
+                    </summary>
+                    <div style="padding: 0 5px; text-align: justify; line-height: 1.6; font-size: 1em;">
+ 73화에서 나구모가 킬연 복권을 긁고 있던 중 전화를 거는 것으로 등장. 복권을 긁고 있다는 말에 당첨되면 얼마냐(······)라는 발언을 하기도. 사실 본 목적은 복권이 아니라 학교 서류 서명과 관련된 이야기였다. 그러나 복권 얘기 때문에 까먹고 결국 위조 서명을 했다는 후문.
+                        <br><br>
+                        74화에서 사카모토 상점에 나구모와 함께 들려 사카모토를 사카모토의 아내인 아오이로 분장 시켜주는 것에 동참. 사카모토 상점에 커스터드 푸딩 다섯 개를 무료로 갈취한 날이기도 하다. 
+                    </div>
+                </details>
+
+                <details open class="wiki-section" style="margin-left: 8px; margin-top: 15px;">
+                    <summary style="list-style: none; outline: none; cursor: pointer;">
+                        <h4 id="s-3.6.5" class="wiki-heading" style="font-size: 1.3em; font-weight: bold; margin-bottom: 0; display: flex; align-items: center; border: none;">
+                            <span style="color: #0275d8; margin-right: 6px;">3.6.5.</span> 세기의 킬러전 편
+                            <span class="toggle-text" style="font-size: 0.55em; font-weight: normal; color: #0275d8; margin-left: auto; align-self: flex-end; margin-bottom: -2px;"></span>
+                        </h4>
+                        <hr style="border: 0; height: 1px; background: #ccc; margin: 5px 0 12px 0;">
+                    </summary>
+                    <div style="padding: 0 5px; text-align: justify; line-height: 1.6; font-size: 1em;">
+                        
+ 작중 최대 분기점인 세기의 킬러전. 나구모가 타카무라의 공격에 의해 리타이어 된 후 미야 할멈에게 치료 받고 있는 동안에도 관련 소식을 접하지 못했다. 
+                        <br><br>
+                        아무래도 킬러 세계와 전혀 상관이 없는 일반인이기에 미야할멈에게 치료 받고 있던 나구모를 비롯한 사카모토 일행도 생사가 불투명한 킬러들의 싸움에 카츠노를 끌어들이지 않으려 했던 것으로 보인다. 그러나 나구모의 부재가 길어지자 카츠노는 곧장 신에게 연락을 취했고 묘하게 거짓말을 하는 듯한 신의 목소리를 듣고는 거짓말하지 말고 똑바로 말 해. 라며 날선 목소리로 답하자 결국 만나서 얘기해 주겠다는 신의 답변에 미야할멈의 침술원으로 향하게 된다.
+                        <span class="footnote-container" tabindex="0">
+                            <span class="footnote-text">[번호]</span>
+                            <span class="footnote-content">
+                                <span class="fn-num">[번호]</span> 평소와 다른 분위기. 이후에 신이 보너스 컷에서 언급한 것을 보면 나구모와 지내면서 살기가 옮겨 붙은 것인지 (...) 일반인 치고는 상당한 살기에 조금 당황했다고 언급했다.
+                                <span class="fn-close-hint">닫으려면 바깥을 클릭하세요</span>
+                            </span>
+                        </span>
+                        <br><br>
+                        
+                        <div style="padding: 0 3px;">
+                            <div style="border-left: 3px solid #CD7071; background-color: #f9f9f9; padding: 10px 15px; margin-bottom: 15px; font-family: 'Noto Sans JP', sans-serif; font-size: 0.85em; width: auto; max-width: 100%; box-sizing: border-box;">
+                                <details style="cursor: pointer;">
+                                    <summary style="list-style: none; outline: none; line-height: 1.6;">
+                                        <style>summary::-webkit-details-marker { display: none; }</style>
+                                        なっちゃん、本当にムカつく……。命、大事にしてって言ったよね！なっちゃんにとって、私って何なの？ ただ拾ったおもちゃ程度にしか思ってないの？死にかけたこと、なんで後から他の人に聞かなきゃいけないわけ……？なっちゃんの……なっちゃんの境界線の中で、私ってどこにいるの……？
+                                    </summary>
+                                    <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #ddd; color: #666;">
+                                        너 진짜 짜증나. 내가 목숨 간수 잘하라고 했지! 너한테 나는 뭔데? 그냥 주운 장난감 그 정도야……? 너 죽다 살아난 걸 내가 한참 뒤에 다른 사람한테 들었어야 할 만큼 네 바운더리에 나는 어디쯤 있는 건데……?
+                                    </div>
+                                </details>    
+                            </div>
+                        </div>
+                        <br>
+                        늘 여유롭던 나구모조차 서럽게 울음을 터뜨리는 카츠노의 얼굴을 보며 무언가 해명하려는 듯 입술을 달싹였으나 결국 어떤 말도 내뱉지 못했다. 늘 완벽한 타이밍에 최선의 거짓말을 골라내고, 제 감정을 능숙하게 숨겨 포커페이스를 유지하던 그의 천부적인 감각은 카츠노가 쏟아낸 날 것 그대로의 진심 앞에서 완전히 기능을 상실했다. 카츠노의 세상은 이미 2년 만에 나구모를 중심으로 재편되었으나, 정작 '거짓투성이 남자'인 나구모에게 자신이 어느 정도의 무게인지는 확신하지 못했기에.
+                    </div>
+                </details>
+
+                <details open class="wiki-section" style="margin-left: 8px; margin-top: 15px;">
+                    <summary style="list-style: none; outline: none; cursor: pointer;">
+                        <h4 id="s-3.6.6" class="wiki-heading" style="font-size: 1.3em; font-weight: bold; margin-bottom: 0; display: flex; align-items: center; border: none;">
+                            <span style="color: #0275d8; margin-right: 6px;">3.6.6.</span> 살연 감옥 편
+                            <span class="toggle-text" style="font-size: 0.55em; font-weight: normal; color: #0275d8; margin-left: auto; align-self: flex-end; margin-bottom: -2px;"></span>
+                        </h4>
+                        <hr style="border: 0; height: 1px; background: #ccc; margin: 5px 0 12px 0;">
+                    </summary>
+                    <div style="padding: 0 5px; text-align: justify; line-height: 1.6; font-size: 1em;">
+                        205화에서 슬러의 방송을 보는 것으로 한 컷 등장한다. 나구모와 대판 싸운 후 (···) 편의점 알바를 하며 딱히 집에 들어가진 않았던 듯 보인다. 교복 차림으로 편의점에서 농땡이를 피우다가 슬러의 방송을 보게 되었다. 나구모에게 연락을 하려는 듯 연락처를 뒤적이지만 차마 하지 못했다. 아마 심한 말을 뱉었던 것에 나름 신경을 쓰고 있던 듯 
+                    </div>
+                </details>
+
+                <details open class="wiki-section" style="margin-left: 8px; margin-top: 15px;">
+                    <summary style="list-style: none; outline: none; cursor: pointer;">
+                        <h4 id="s-3.6.7" class="wiki-heading" style="font-size: 1.3em; font-weight: bold; margin-bottom: 0; display: flex; align-items: center; border: none;">
+                            <span style="color: #0275d8; margin-right: 6px;">3.6.7.</span> 신생 살연 편
+                            <span class="toggle-text" style="font-size: 0.55em; font-weight: normal; color: #0275d8; margin-left: auto; align-self: flex-end; margin-bottom: -2px;"></span>
+                        </h4>
+                        <hr style="border: 0; height: 1px; background: #ccc; margin: 5px 0 12px 0;">
+                    </summary>
+                    <div style="padding: 0 5px; text-align: justify; line-height: 1.6; font-size: 1em;">
+                         <div style="border: 1px solid #bbb; margin-bottom: 25px;">
+                            <div style="background-color: #ca5353; height: 4px;"></div>
+                            <div style="padding: 10px 15px; text-align: center;">
+                                <div style="font-size: 1em; font-weight: bold; margin-bottom: 3px;"><span style="color: #bc2929;">트라우마</span>를 유발할 수 있는 요소를 포함하고 있습니다.</div>
+                                <div style="font-size: 0.7em; color: #666;"> 폭발 및 테러와 관련된 내용을 다루고 있으므로 해당 요소에 거부감이 있으신 분들은 열람에 주의하시길 바랍니다.</div>
+                            </div>
+                        </div>
+                        
+                        정부의 허가 하에 살연을 장악한 슬러가 민간인들에게 3번에 한해 살인 허가를 주면서 3일만에 일본 인구의 32만 4천 명이 사망하는 사태가 벌어지는데 이때 학교 근처에서 일어난 총격 사태에 휘말리며 가까운 곳에서 일어난 연속적인 총격과 폭발음에 <b>일시적 실청(失聽)</b> 상태에 빠지게 된다. 정확한 원인은 알 수 없으나 폭발음과 총성으로 인해 고막이 손상된 듯. 
+                        <br><br>
+                        221화에서 시시바와 한 차례 충돌한 뒤, 나구모는 카츠노가 보낸 뒤죽박죽인 내용의 라인(LINE) 메시지를 확인하고 다급히 현장으로 향한다. 평소라면 결코 보내지 않았을 비정상적 오타투성이 메시지에서 카츠노의 신변에 이상이 생겼음을 직감한 것. 
+                        <span class="footnote-container" tabindex="0">
+                            <span class="footnote-text">[번호]</span>
+                            <span class="footnote-content">
+                                <span class="fn-num">[번호]</span> 나구모가 개통해 준 휴대폰이었기에 내장된 GPS로 위치를 바로 알 수 있었다.
+                                <span class="fn-close-hint">닫으려면 바깥을 클릭하세요</span>
+                            </span>
+                        </span>
+                        나구모가 현장에 도착했을 때, 카츠노는 초점을 잃은 눈으로 연기 자욱한 거리 한복판에 주저앉아 있었다. 나구모가 카츠노의 어깨를 붙잡고 상태를 확인하며 다급하게 무언가 질문을 던졌으나, 카츠노는 대답 대신 나구모의 입술 모양만을 멍하니 쫓다가 이내 질겁한 표정으로 자신의 청각이 소실되었음을 실토한다. 
+                        <br><br>
+
+                        <div style="padding: 0 3px;">
+                            <div style="border-left: 3px solid #CD7071; background-color: #f9f9f9; padding: 10px 15px; margin-bottom: 15px; font-family: 'Noto Sans JP', sans-serif; font-size: 0.85em; width: auto; max-width: 100%; box-sizing: border-box;">
+                                <details style="cursor: pointer;">
+                                    <summary style="list-style: none; outline: none; line-height: 1.6;">
+                                        <style>summary::-webkit-details-marker { display: none; }</style>
+                                        ……なっちゃん。私、わたし、よく聞こえないの。なっちゃんの声が、ひとつも、聞こえないんだよ。今なんて言ってるの……？ 冗談……だよね？ ふざけてるんでしょ……？ 何も、何も聞こえないよ……。 
+                                    </summary>
+                                    <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #ddd; color: #666;">
+                                        ······나쨩. 나, 나 잘 안 들려. 나쨩 목소리가, 하나도, 안 들려. 지금 뭐라고 하는 거야······? 장난치는 거지? 아무 소리도 안, 들려. 
+                                        <span class="footnote-container" tabindex="0">
+                                            <span class="footnote-text">[번호]</span>
+                                            <span class="footnote-content">
+                                                <span class="fn-num">[번호]</span> 이때 카츠노가 내뱉은 말은 당시의 패닉을 고스란히 담고 있었다. 귀에서는 이명만 반복되고 들리지 않는 소리에 크게 멘탈이 나갔었던듯. 
+                                                <span class="fn-close-hint">닫으려면 바깥을 클릭하세요</span>
+                                            </span>
+                                        </span>
+                    </div>
+                </details>
+ </div>
+ </div>
+결국 나구모는 복잡한 감정이 뒤섞인 표정으로 멘탈이 완전히 나가버린 카츠노를 품에 안아 토닥이며 사태를 수습한다.
+  </div>
+                </details>
+
+                <details open class="wiki-section" style="margin-left: 8px; margin-top: 15px;">
+                    <summary style="list-style: none; outline: none; cursor: pointer;">
+                        <h4 id="s-3.6.8" class="wiki-heading" style="font-size: 1.3em; font-weight: bold; margin-bottom: 0; display: flex; align-items: center; border: none;">
+                            <span style="color: #0275d8; margin-right: 6px;">3.6.8.</span> 최종 결전 편
+                            <span class="toggle-text" style="font-size: 0.55em; font-weight: normal; color: #0275d8; margin-left: auto; align-self: flex-end; margin-bottom: -2px;"></span>
+                        </h4>
+                        <hr style="border: 0; height: 1px; background: #ccc; margin: 5px 0 12px 0;">
+                    </summary>
+                    <div style="padding: 0 5px; text-align: justify; line-height: 1.6; font-size: 1em;">
+                         <a href="https://namu.wiki/w/%EB%82%98%EA%B5%AC%EB%AA%A8%20%EC%9A%94%EC%9D%B4%EC%B9%98" target="_blank" style="color: #0275d8; text-decoration: none;"><b>나구모</b></a>는 카츠노를 데리고 곧장 <a href="https://namu.wiki/w/%EB%AF%B8%EC%95%BC%20%ED%95%A0%EB%A9%88" target="_blank" style="color: #0275d8; text-decoration: none;"><b>미야할멈</b></a>을 찾아간다. 미야할멈은 카츠노의 상태를 살핀 뒤, <span style="color: #727272;">폭발음과 총성으로 인한 고막 손상</span>으로 <b>일시적 실청(失聽)</b> 상태임을 확인한다. 회복 가능성은 있으나 그 시점이 언제일지는 확언할 수 없다는 판단. 나구모는 복잡한 심경을 뒤로한 채 <a href="https://namu.wiki/w/%EC%9A%B0%EC%A6%88%ED%82%A4%20%EC%BC%80%EC%9D%B4?from=X%28%EC%8A%AC%EB%9F%AC%29" target="_blank" style="color: #0275d8; text-decoration: none;"><b>슬러</b></a> <b>및</b> <a href="https://namu.wiki/w/X%20%EC%9D%BC%ED%8C%8C?from=%EC%8B%A0%EC%83%9D%20%EC%82%B4%EC%97%B0#%EC%82%B4%EC%97%B0%20%EA%B0%90%EC%98%A5%20%ED%8E%B8" target="_blank" style="color: #0275d8; text-decoration: none;"><b>신생 살연</b></a>과의 대치를 위해 미야할멈에게 카츠노를 부탁한 뒤 다시 전장으로 향한다. 
+                        
+                        <span class="footnote-container" tabindex="0">
+                            <span class="footnote-text">[번호]</span>
+                            <span class="footnote-content">
+                                <span class="fn-num">[번호]</span> <a href="https://namu.wiki/w/%EC%98%A4%ED%82%A4(%EC%82%AC%EC%B9%B4%EB%AA%A8%ED%86%A0%20%EB%8D%B0%EC%9D%B4%EC%A6%88)#s-3.3" style="color: #0275d8; font-weight: bold;">222화</a> <b>南雲 vs 沖</b>
+                                <span class="fn-close-hint">닫으려면 바깥을 클릭하세요</span>
+                            </span>
+                        </span>
+                        <br><br>
+                        정신을 차린 뒤, 청력뿐만 아니라 목소리조차 나오지 않는다는 사실을 깨닫는다. 예상외로 크게 당황하거나 우울해하는 기색 없이 깨어난 자신을 다시 진찰하는 미야할멈의 손바닥 위에 서투른 일본어로 목소리가 안 나와요. 라고 적어 자신의 상태를 언급한다. 
+                        <br><br>
+                        목소리가 돌아오지 않는 동안에는 휴대폰 메모장을 활용해 소통을 이어간다. 이후 사카모토 일행이 JCC의 중환자실로 사카모토를 옮기기로 하면서 어느 정도 외상을 회복한 카츠노는 자신의 원래 일상으로 돌아간다. 비록 청력과 목소리가 온전히 회복되지 않은 상태이지만, '일반인'으로서 영위해 온 삶을 지키기 위해. 
+                        <br><br>
+                        미나토구 맨션으로 돌아오고 난 후 한참을 망설이다 메신저 앱을 켠다. 청력을 잃기 전, 나구모에게 모질게 화를 냈던 기억과 그 이후 제대로 된 화해조차 하지 못한 채 소리 없는 공백을 맞이하고 미안함이 뒤섞여 있었던 것이 꽤 크게 작용한 듯. 평소라면 장난스러운 이모티콘과 함께 보냈을 메시지였으나 이번에는 목소리로 전할 수 없는 마음을 꾹꾹 눌러 담아 텍스트로 전달한다.
+                        <br><br>
+                        이후 나구모에게서 줄곧 연락이 오지 않자 평소와 답지 않은 불안한 모습을 종종 보이곤 한다. 나름대로 일상을 지켜나가려고 하지만 나구모의 빈자리가 꽤 크게 느껴지는 듯하다. 
+                        
+                        <span class="footnote-container" tabindex="0">
+                            <span class="footnote-text">[번호]</span>
+                            <span class="footnote-content">
+                                <span class="fn-num">[번호]</span> 신생 살연 편에서 일어난 테러 사건 이후 악몽 탓에 불면증이 생겼다. 불면증 이외에도 큰 소리와 폭발음에 대한 트라우마가 생긴 듯. 
+                                <span class="fn-close-hint">닫으려면 바깥을 클릭하세요</span>
+                            </span>
+                        </span>
+                    </div>
+                </details>
+ 
+              <br>
+              
+<div style="font-family: sans-serif; color: #373a3c; width: 95%; max-width: 800px; margin: 0 auto; line-height: 1.5; box-sizing: border-box;">
+
+    <div style="margin-top: 35px; width: 100%;">
+        <h2 id="s-6" style="font-size: 1.6em; font-weight: bold; margin-bottom: 0; display: flex; align-items: center; border: none;">
+            <span style="color: #0275d8; margin-right: 6px;">6.</span> 기타
+        </h2>
+        <hr style="border: 0; height: 1px; background: #ccc; margin: 5px 0 12px 0; width: 100%;"><br>
+      <div style="padding: 0 5px; text-align: justify; line-height: 1.6; font-size: 1em;">
+         ⚅  유명한 카페인 중독이다. 고등학교 생활 내내 아5샷추 <span style="color: #aaa; text-decoration: line-through;">아이스 아메리카노 샷 추가 5번에다가 물 적게</span>를 마셔왔으며 이외의 에너지 드링크 하루 6캔을 하루에 일삼을 정도로 심한 카페인 중독이다. 다행히 수면에는 큰 영향이 없는 듯. 
+             <br><br>
+           ⚅  디저트를 꽤 좋아한다. 나구모와 만나기 이전까지는 사치나 거금 들여 한달에 한번 사서 먹을까 말까였지만 이후에 나구모가 <span style="color: #aaa; text-decoration: line-through;">열심히 먹이고 찌우고</span> 디저트의 세계에 눈 뜨게 해주면서 디저트광이 되었다. 최애는 커스터드 푸딩, 차애는 메론소다와 마들렌, 그리고 생초콜릿.
+            <br><br>   
+             ⚅  꾸미는 것에 관심이 있는 만큼 네일에도 관심이 있었으나 알바 대문에 포기했다. 아무래도 위생도 그렇고 활동성도 그렇고 타협점을 찾아 휴가를 받으면 일회용성으로 종종하곤 한다. 
+                  <span class="footnote-container" tabindex="0">
+        <span class="footnote-text">[32]</span>
+        <span class="footnote-content">
+            <span class="fn-num">[32]</span> 
+                  나구모가 장난치다가 네일팁을 한 번 부숴 먹은 적이 있다. 
+                  <span class="fn-close-hint">닫으려면 바깥을 클릭하세요</span>
+        </span>
+    </span>
+<br><br>
+         ⚅  같이 사는 동거인을 닮은 것인지 멀미 경향을 종종 보인다. 그러나 나구모처럼 심하진 않고 해상도가 높은 컴퓨터로 게임을 오래 하면 멀미를 호소하는 듯. <span style="color: #aaa; text-decoration: line-through;">남자는 차 멀미 여자는 게임 멀미 진짜 가지가지한다</span>
+
+<br><br>
+                  
+     ⚅  한국인답게 매운 것에는 면역이 있다. 스트레스를 받거나 짜증나는 날에는 매운 걸 종종 찾는 모습도 보여준다. 그러나 신기하게도 민트와 같은 맛과 향에는 면역이 없다. 
+                                   <span class="footnote-container" tabindex="0">
+        <span class="footnote-text">[33]</span>
+        <span class="footnote-content">
+            <span class="fn-num">[33]</span>  민트 맛 치약으로 양치를 하다가 너무 매워서 운 적이 있을 정도. 이후로 쓰는 치약은 무조건 달달한 맛이 나는 치약을 사용한다. 
+            <span class="fn-close-hint">닫으려면 바깥을 클릭하세요</span>
+        </span>
+    </span> 
+<br><br> 
+                  
+                 
+   ⚅  요리에는 재능이 없는 편. 그러나 라면 하나만큼은 자부심이 있는 편이다.   
+                                                <span class="footnote-container" tabindex="0">
+        <span class="footnote-text">[34]</span>
+        <span class="footnote-content">
+            <span class="fn-num">[34]</span>  아무래도 홀로서기 기간이 긴 만큼 편의점 음식을 제외하고는 할 줄 아는 음식의 범위가 좁은 편이다. 
+            <span class="fn-close-hint">닫으려면 바깥을 클릭하세요</span>
+        </span>
+    </span> 라면을 끓일 때만 주방 출입이 가능하다는 여담이 있다. 
+                  <br><br>
+                  
+⚅  왼손잡이이나 거의 양손잡이에 가깝다. 글을 쓴다거나 정교한 활동은 주로 왼손을 쓰지만 기본적으로 양손을 쓸 줄 안다.
+                  
+<br><br>
+                  
+⚅  휴대폰 속 저장명은 あなっちゃん. 상단에 뜨라고 あ를 붙였다. あなた랑 비슷해 보인다는 점에서 포인트가 될 수 있으나 정작 본인은 모르는 듯하다.
+
+<br><br>
+
+⚅  포키보다 빼빼로 파. 포키를 좋아하는 동거인과 종종 포키 vs 빼빼로 대전을 펼치곤 한다. <span style="color: #aaa; text-decoration: line-through;">국적싸움?</span> 그러나 가장 좋아하는 과자는 포키도 빼빼로도 아니고 칸쵸다.
+
+<br><br>
+                  
+⚅  사랑니를 빼기 무서워 여태까지 뻐기고 있었으나 최근에 하나를 뽑아서 3개가 됐다. <span style="color: #aaa; text-decoration: line-through;">사랑니 말고 死랑니</span> 푸딩 사준다는 나구모 말에 속아서 치과에 갔다가 사랑니를 뺐다. 물론 푸딩을 사오긴 했으나 먹지는 못 했다...   
+
+                  <br><br>
+                  
+⚅  길고양이들이 워낙 카츠노를 잘 따르는 만큼 고양이들을 좋아한다. 나구모와 동거 이전에도 골목길에서 늘 길고양이들을 돌봤으며 가방에는 늘 츄르와 참치 캔을 넣어다녔다.
+
+<span class="footnote-container" tabindex="0">
+        <span class="footnote-text">[35]</span>
+        <span class="footnote-content">
+            <span class="fn-num">[35]</span> 끼니만 챙겨주는 것이 아닌 다치거나 예방 접종 같은 것도 직접 시키는 경우가 종종 있었다. 당연히 금액은 많이 깨졌다. 본인 식사는 편의점 폐기로 때우면서도 츄르는 살 정도의 애정을 보여준다. 아무래도 본인 처지와 비슷하게 느꼈던 적이 많았던 듯.
+            <span class="fn-close-hint">닫으려면 바깥을 클릭하세요</span>
+        </span>
+    </span>
+<br><br>
+                  ⚅  좋아하는 캐릭터는 마메치. 가방에 2년 내내 달고 다니는 마메치 키링이 있다. 동거 초반 시절, 나구모가 오사카 지역으로 임무를 나갔다가 돌아오는 길에 인형 뽑기로 뽑아서 데려왔다고. 가방을 바꾸는 경우에도 해당 키링을 꼭 끼우고 다닌다. 
+                 <span class="footnote-container" tabindex="0">
+        <span class="footnote-text">[36]</span>
+        <span class="footnote-content">
+            <span class="fn-num">[36]</span> 타인에게서 처음으로 선물 받았다는 것이라는 의미도 큰 듯. 이후 최애 캐릭터로 정착하였으며 띠부씰도 많이 모으고 있다. 종종 나구모의 멀티툴 케이스에도 붙여주는 광경이 보이기도. 
+            <span class="fn-close-hint">닫으려면 바깥을 클릭하세요</span>
+        </span>
+    </span> 
+<br><br> 
+
+                  ⚅  최종 결전 편에서는 주로 헤드셋이나 이어폰을 낀 모습으로 나온다. 사고 이후 실청이 조금씩 회복은 되고 있으나 여전히 소리에는 민감한 반응을 보여서인 듯. 
+                      <br><br> 
+⚅  외전인 홀리데이즈에서는 아사쿠라 신과 같은 JCC 아카데미 소속이며 사카모토 상점에서 같이 알바를 하고 있는 설정. 나구모와의 동거 설정도 그대로 따온 듯 보인다.
+
+            
+            </div>
+        </div>
+        </div>
+ 
+  
+  <div id="custom-footnotes-area">
+    <hr style="border: 0; border-top: 1px solid #ccc; margin: 40px 0 10px 0;">
+    <ul id="footnote-list" style="list-style: none; padding: 0; font-size: 0.85em; line-height: 1.8; color: #555;">
+        </ul>
+</div>
+ 
+  
+  
+  
+  <script>
+window.addEventListener('DOMContentLoaded', (event) => {
+    const footnoteList = document.getElementById('footnote-list');
+    const footnotes = document.querySelectorAll('.footnote-container');
+
+    footnotes.forEach((fn, index) => {
+        const num = index + 1;
+        fn.id = 'ref-' + num;
+
+        // 💥 여기가 핵심! 💥
+        // 팝업 안에서 기존 [번호](.fn-num)랑 안내문구(.fn-close-hint)를 뺀 '순수 텍스트'만 가져와!
+        let contentElement = fn.querySelector('.footnote-content').cloneNode(true);
+        
+        // 필요 없는 요소들 삭제 (원본은 유지됨)
+        const numTag = contentElement.querySelector('.fn-num');
+        const hintTag = contentElement.querySelector('.fn-close-hint');
+        if(numTag) numTag.remove();
+        if(hintTag) hintTag.remove();
+
+        const pureContent = contentElement.innerHTML.trim();
+
+        // 아래 목록 생성
+        const li = document.createElement('li');
+        li.style.marginBottom = '12px';
+        
+
+        // margin-right: 8px; 를 3px 정도로 줄였어! 더 붙이고 싶으면 0px로 해줘도 돼.
+        li.innerHTML = `<a href="#ref-${num}" style="color: #0275d8; text-decoration: none; font-weight: bold; margin-right: 3px;">[${num}]</a> ${pureContent}`;
+        footnoteList.appendChild(li);
+    });
+});
 </script>
-</body>
-</html>
