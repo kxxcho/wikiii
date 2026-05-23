@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KXXCHO RELATION MAKER</title>
+<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+
+<style>
+    body { font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif; background-color: #f4f6f8; display: flex; justify-content: center; padding: 20px; color: #333; margin: 0; }
+    .maker-wrap { display: flex; gap: 20px; width: 100%; max-width: 1400px; flex-wrap: wrap; align-items: flex-start; }
+    
+    /* 패널 설정 */
+    .panel-left { flex: 1; min-width: 350px; background: white; border-radius: 12px; padding: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); max-height: 90vh; overflow-y: auto; }
+    .panel-right { flex: 2; min-width: 400px; background: white; border-radius: 12px; padding: 0; box-shadow: 0 4px 15px rgba(0,0,0,0.05); overflow: auto; display: flex; flex-direction: column; }
+    
+    h2.title-h2 { color: #008275; margin-top: 0; font-weight: 900; text-align: center; margin-bottom: 25px; }
+    .section-head { font-size: 15px; font-weight: bold; border-bottom: 2px solid #333; padding-bottom: 5px; margin: 25px 0 15px 0; }
+    
+    .input-grp { margin-bottom: 12px; }
+    .input-grp label { display: block; font-size: 12px; font-weight: bold; margin-bottom: 4px; color: #555; }
+    .input-grp input[type="text"], .input-grp textarea, .input-grp select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-family: inherit; font-size: 13px; transition: border 0.2s; }
+    .input-grp input[type="text"]:focus, .input-grp textarea:focus { border-color: #008275; outline: none; }
+    .input-grp textarea { resize: vertical; height: 60px; }
+
+    .btn-add { background: #e0f2f1; color: #008275; border: none; padding: 10px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; display: block; width: 100%; margin-top: 10px; transition: 0.2s; }
+    .btn-add:hover { background: #c8e6e5; }
+    
+    .btn-download { background: #262626; color: white; border: none; padding: 15px; border-radius: 8px; font-weight: bold; cursor: pointer; width: calc(100% - 40px); margin: 20px; font-size: 16px; transition: 0.2s; }
+    .btn-download:hover { background: #008275; }
+
+    .preview-header { background: #008275; color: white; padding: 12px 20px; font-weight: bold; font-size: 14px; }
+    #preview-area { padding: 30px; background: #e5e5e5; overflow-y: auto; max-height: 80vh; position: relative; display: flex; justify-content: center; }
+
+    .dynamic-box { background: #fafbfc; border: 1px solid #ccc; padding: 15px; border-radius: 8px; margin-bottom: 15px; position: relative; }
+    .btn-del-box { position: absolute; top: 10px; right: 10px; background: #ff4d4f; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; cursor: pointer; font-weight: bold; }
+
+    .kxx-sticker, .draggable-img { cursor: move; }
+    .kxx-side-img, .kxx-bb-img { overflow: hidden; }
+
+    /* 모달 기본 (결과물 저장용) */
+    .modal-overlay {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.85); z-index: 9999;
+        display: none; justify-content: center; align-items: center; flex-direction: column;
+    }
+    .modal-content { max-width: 90%; max-height: 75vh; border-radius: 12px; overflow: hidden; background: transparent; }
+    .modal-text { color: white; margin-bottom: 20px; font-weight: bold; text-align: center; font-size: 15px; letter-spacing: -0.5px; }
+    .modal-close { margin-top: 20px; padding: 12px 35px; background: #008275; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px; }
+
+    /* 시작 설명 팝업 모달 스타일 (요청 원본 유지) */
+    .welcome-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 99999; padding: 15px; box-sizing: border-box; }
+    .welcome-modal { 
+        background: white; padding: 25px; border-radius: 16px; width: 480px; max-width: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.15); animation: modalFadeIn 0.3s ease; 
+        display: flex; flex-direction: column; max-height: 85vh; 
+    }
+    .welcome-title { font-size: 20px; font-weight: 900; color: #008275; text-align: center; margin-bottom: 15px; display: flex; align-items: center; justify-content: center; gap: 6px; flex-shrink: 0; }
+    .welcome-content { 
+        font-size: 13px; line-height: 1.6; color: #444; margin-bottom: 15px; text-align: justify; 
+        overflow-y: auto; 
+        padding-right: 5px;
+    }    
+    .welcome-content ul { padding-left: 20px; margin: 8px 0; }
+    .welcome-content li { margin-bottom: 6px; }
+    .btn-modal-close { background: #008275; color: white; border: none; padding: 12px; width: 100%; border-radius: 8px; font-weight: bold; font-size: 14px; cursor: pointer; flex-shrink: 0; }
+    .btn-modal-close:hover { background: #00665c; }
+    @keyframes modalFadeIn { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+
+    @media screen and (max-width: 600px) {
+        .welcome-title { font-size: 17px !important; }
+        .welcome-content { font-size: 11.5px !important; line-height: 1.5 !important; }
+        .welcome-modal { padding: 18px !important; }
+    }
+</style>
+</head>
+<body>
+
+<div class="welcome-modal-overlay" id="welcomeModal">
+    <div class="welcome-modal">
+        <div class="welcome-title">KXXCHOWIKI 에디터 가이드</div>
+        <div class="welcome-content">
+               
+            그간 티스토리 코드로 배포를 했으나 이래저래 어려움이 많아 가볍게 수정이 가능한 에디터를 새로 제작해보았습니다! ⁃ ⩊ ⁃  최하단 카피라이트 삭제, 에디터 자작 발언 등의 행위는 당연히 금지하고 있습니다 ㅜ.ㅜ  이를 제외한 원본을 훼손하지 않는 선에서 일부 수정은 허용하고 있으며 (추가 표 삽입, 자간 조절 등 문의 없이 코드 수정 사용 가능) 이외 문의는 언제나 <a href="https://asked.kr/kxxchox" target="_blank" style="color: #008275; text-decoration: none;">https://asked.kr/kxxchox </a>를 통해 주시면 빠른 회신 및 업데이트 하도록 하겠습니다!
+<br><br>
+            <span style="color: #888;">에디터 사용 금지 드림) 사카모토 데이즈 ㅡ 나구모 요이치 </span><br><br>
+               만들고 인용으로 자랑해주시면 정말... 좋아합니다<br>
+               매번 인용으로 자랑해주시는 분들께 감사하고 있어요  (⸝⸝๑  ̫ ๑⸝⸝⸝) 
+            <hr style="border:0; border-top:1px solid #eee; margin:12px 0;">
+            <b>특수 태그 사용 안내</b>
+            <ul>
+                <li><b>각주 달기</b>: 문장 뒤에 <code>[각주:설명내용]</code>을 적으면 실시간으로 각주 번호가 부여되며 팝업 및 하단 목록이 자동 생성됩니다.</li>
+                <li><b>인용구 틀</b>: 대사나 강조 구절은 <code>[인용구:원문대사|번역설명]</code> 태그를 사용해 인용구 틀을 씌울 수 있습니다.</li>
+                <li><b>사진 삽입</b>: 문단 내 사진 업로드 후 원하는 위치에 <code>[사진:1]</code>, <code>[사진:2]</code>를 기입하세요. 공백 없이 붙여 쓰면 <code>[사진:1][사진:2]</code> 가로 배열로 정렬됩니다.</li>
+                <li><b>커미션 출처</b>: 사진 뒤에 파이프 기호를 붙여 <code>[사진:1|출처내용]</code>을 쓰면 사진 밑에 ⓒ 기호와 함께 출처가 표기됩니다.</li>
+            </ul>
+        </div>
+        <button class="btn-modal-close" onclick="closeWelcomeModal()">에디터 시작하기</button>
+    </div>
+</div>
+
+<div class="maker-wrap">
+    <div class="panel-left">
+        <h2 class="title-h2">RELATION MAKER</h2>
+
+        <div class="section-head">0. 전체 설정 & 스티커 꾸미기</div>
+        <div class="input-grp"><label>페어명 (RELATIONSHIP 등)</label><input type="text" id="in-main-title" value="페어명을 적어주세요" oninput="updatePreview()"></div>
+        <div class="input-grp"><label>중앙 한 줄 요약</label><input type="text" id="in-mid-sub" value="한 줄 요약 텍스트" oninput="updatePreview()"></div>
+        <div class="input-grp"><label>중앙 기본 서술 (크기 고정)</label><textarea id="in-mid-desc" oninput="updatePreview()">이 곳에 페어의 상세한 관계 서술이나 추가 설명을 적어주세요. 하단 텍스트 영역의 높이는 고정되어 있으니 내용 길이를 조절해 주세요.</textarea></div>
+        
+        <div style="background: #e8f5e9; padding: 15px; border-radius: 8px; border: 1px solid #c8e6e9; margin-top: 15px;">
+            <div style="font-size: 12px; font-weight: bold; color:#008275; margin-bottom: 8px;">[ 🎀 SD 스티커 꾸미기 ]</div>
+            <div class="input-grp"><label>투명화(PNG) 스티커 업로드 (여러 장 가능)</label><input type="file" accept="image/*" onchange="addSticker(this)" multiple></div>
+        </div>
+
+        <div class="section-head">1. 상단 인물 설정 (좌/우)</div>
+        <div style="display: flex; flex-direction: column; gap: 20px;">
+            <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; border: 1px solid #eee;">
+                <div style="font-size: 13px; font-weight: bold; color:#008275; margin-bottom: 12px;">[왼쪽 인물]</div>
+                <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                    <div style="flex: 1;"><label style="font-size:11px;">캐치프레이즈 색</label><input type="color" id="in-l-catch-color" value="#008275" oninput="updatePreview()" style="width:100%; height:30px; padding:0; border:1px solid #ccc; border-radius:4px; cursor:pointer;"></div>
+                    <div style="flex: 1;"><label style="font-size:11px;">이름 색상</label><input type="color" id="in-l-txt" value="#333333" oninput="updatePreview()" style="width:100%; height:30px; padding:0; border:1px solid #ccc; border-radius:4px; cursor:pointer;"></div>
+                    <div style="flex: 1;"><label style="font-size:11px;">설명 색상</label><input type="color" id="in-l-desc-color" value="#444444" oninput="updatePreview()" style="width:100%; height:30px; padding:0; border:1px solid #ccc; border-radius:4px; cursor:pointer;"></div>
+                </div>
+                <div class="input-grp"><label>캐치프레이즈</label><input type="text" id="in-l-catch" value="최강의 킬러" oninput="updatePreview()"></div>
+                <div class="input-grp"><label>이름</label><input type="text" id="in-l-name" value="캐릭터 A" oninput="updatePreview()"></div>
+                <div class="input-grp"><label>설명</label><textarea id="in-l-desc" oninput="updatePreview()">왼쪽 인물의 간단한 설명</textarea></div>
+                <div class="input-grp"><label>메인 사진</label><input type="file" accept="image/*" onchange="handleImg(this, 'imgL')"></div>
+            </div>
+
+            <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; border: 1px solid #eee;">
+                <div style="font-size: 13px; font-weight: bold; color:#008275; margin-bottom: 12px;">[오른쪽 인물]</div>
+                <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                    <div style="flex: 1;"><label style="font-size:11px;">캐치프레이즈 색</label><input type="color" id="in-r-catch-color" value="#ff4d4f" oninput="updatePreview()" style="width:100%; height:30px; padding:0; border:1px solid #ccc; border-radius:4px; cursor:pointer;"></div>
+                    <div style="flex: 1;"><label style="font-size:11px;">이름 색상</label><input type="color" id="in-r-txt" value="#333333" oninput="updatePreview()" style="width:100%; height:30px; padding:0; border:1px solid #ccc; border-radius:4px; cursor:pointer;"></div>
+                    <div style="flex: 1;"><label style="font-size:11px;">설명 색상</label><input type="color" id="in-r-desc-color" value="#444444" oninput="updatePreview()" style="width:100%; height:30px; padding:0; border:1px solid #ccc; border-radius:4px; cursor:pointer;"></div>
+                </div>
+                <div class="input-grp"><label>캐치프레이즈</label><input type="text" id="in-r-catch" value="최고의 파트너" oninput="updatePreview()"></div>
+                <div class="input-grp"><label>이름</label><input type="text" id="in-r-name" value="캐릭터 B" oninput="updatePreview()"></div>
+                <div class="input-grp"><label>설명</label><textarea id="in-r-desc" oninput="updatePreview()">오른쪽 인물의 간단한 설명</textarea></div>
+                <div class="input-grp"><label>메인 사진</label><input type="file" accept="image/*" onchange="handleImg(this, 'imgR')"></div>
+            </div>
+        </div>
+
+        <div class="section-head">2. 중앙 관계 화살표 설정</div>
+        <div style="display: flex; flex-direction: column; gap: 15px; margin-bottom: 10px;">
+            <div style="border: 1px dashed #ccc; padding: 15px; border-radius: 6px;">
+                <div style="font-size: 11px; font-weight: bold; color: #555; margin-bottom: 8px;">[ 좌측 ➔ 우측 화살표 ]</div>
+                <div class="input-grp"><label>화살표 색</label><input type="color" id="in-a1-color" value="#008275" style="width:50px; height:25px; padding:0;" oninput="updatePreview()"></div>
+                <div class="input-grp"><label>위 (느끼는 감정)</label><input type="text" id="in-a1-emo" value="신뢰, 애정" oninput="updatePreview()"></div>
+                <div class="input-grp"><label>아래 (호칭)</label><input type="text" id="in-a1-call" value="너, 파트너" oninput="updatePreview()"></div>
+            </div>
+            
+            <div style="border: 1px dashed #ccc; padding: 15px; border-radius: 6px;">
+                <div style="font-size: 11px; font-weight: bold; color: #555; margin-bottom: 8px;">[ 우측 ⬅ 좌측 화살표 ]</div>
+                <div class="input-grp"><label>화살표 색</label><input type="color" id="in-a2-color" value="#ff4d4f" style="width:50px; height:25px; padding:0;" oninput="updatePreview()"></div>
+                <div class="input-grp"><label>위 (느끼는 감정)</label><input type="text" id="in-a2-emo" value="경계, 라이벌" oninput="updatePreview()"></div>
+                <div class="input-grp"><label>아래 (호칭)</label><input type="text" id="in-a2-call" value="저 녀석" oninput="updatePreview()"></div>
+            </div>
+        </div>
+
+        <div class="section-head">3. 하단 상세 정보 박스</div>
+        <div id="bottom-boxes-container"></div>
+        <button class="btn-add" onclick="addBottomBox()">+ 하단 상세 박스 추가하기</button>
+
+    </div>
+
+    <div class="panel-right">
+        <div class="preview-header">실시간 미리보기 ⁃ ⩊ ⁃</div>
+        <div id="preview-area"></div>
+        <button class="btn-download" onclick="captureMockup()">📸 이미지로 저장하기</button>
+    </div>
+</div>
+
+<div class="modal-overlay" id="result-modal">
+    <div class="modal-text">👇 이미지를 <b>길게 꾹~</b> 눌러서<br>'사진 앱에 저장' 하세요! 👇</div>
+    <img id="result-img" class="modal-content" src="" style="background: white;">
+    <button class="modal-close" onclick="closeResultModal()">닫기</button>
+</div>
+
+<script>
+    let images = {
+        imgL: 'https://via.placeholder.com/400x500/eee/aaa?text=Left+Photo',
+        imgR: 'https://via.placeholder.com/400x500/eee/aaa?text=Right+Photo'
+    };
+    
+    let stickers = []; 
+    let bottomBoxes = [];
+    let imgTransforms = {}; 
+
+    function getTransform(id) {
+        if (!imgTransforms[id]) imgTransforms[id] = { x: 0, y: 0, scale: 1 };
+        return imgTransforms[id];
+    }
+
+    let activeDrag = null;
+    let dragStart = {x: 0, y: 0};
+
+    document.addEventListener('mousedown', (e) => {
+        if (e.target.classList.contains('kxx-sticker')) {
+            activeDrag = { type: 'sticker', id: e.target.getAttribute('data-stk-id') };
+            e.preventDefault();
+        } else if (e.target.classList.contains('draggable-img')) {
+            activeDrag = { type: 'image', id: e.target.getAttribute('data-img-id') };
+            let tf = getTransform(activeDrag.id);
+            dragStart = { x: e.clientX - tf.x, y: e.clientY - tf.y };
+            e.preventDefault();
+        }
+    });
+
+    document.addEventListener('mousemove', (e) => {
+        if (!activeDrag) return;
+        if (activeDrag.type === 'sticker') {
+            const captureCard = document.getElementById('capture-card');
+            const rect = captureCard.getBoundingClientRect();
+            let stk = stickers.find(s => s.id === activeDrag.id);
+            if (stk) {
+                stk.x = ((e.clientX - rect.left) / rect.width) * 100;
+                stk.y = ((e.clientY - rect.top) / rect.height) * 100;
+                let el = document.querySelector(`[data-stk-id="${activeDrag.id}"]`);
+                if(el) { el.style.left = stk.x + '%'; el.style.top = stk.y + '%'; }
+            }
+        } else if (activeDrag.type === 'image') {
+            let tf = imgTransforms[activeDrag.id];
+            tf.x = e.clientX - dragStart.x;
+            tf.y = e.clientY - dragStart.y;
+            let el = document.querySelector(`[data-img-id="${activeDrag.id}"]`);
+            if(el) { el.style.transform = `translate(${tf.x}px, ${tf.y}px) scale(${tf.scale})`; }
+        }
+    });
+
+    document.addEventListener('mouseup', () => { activeDrag = null; });
+
+    document.addEventListener('dblclick', (e) => {
+        if (e.target.classList.contains('kxx-sticker')) {
+            let id = e.target.getAttribute('data-stk-id');
+            stickers = stickers.filter(s => s.id !== id);
+            updatePreview();
+        }
+    });
+
+    document.addEventListener('wheel', (e) => {
+        if (e.target.classList.contains('kxx-sticker')) {
+            e.preventDefault();
+            let id = e.target.getAttribute('data-stk-id');
+            let stk = stickers.find(s => s.id === id);
+            if (stk) {
+                stk.w += e.deltaY > 0 ? -10 : 10;
+                if (stk.w < 20) stk.w = 20;
+                e.target.style.width = stk.w + 'px';
+            }
+        } else if (e.target.classList.contains('draggable-img')) {
+            e.preventDefault();
+            let id = e.target.getAttribute('data-img-id');
+            let tf = getTransform(id);
+            tf.scale *= e.deltaY > 0 ? 0.9 : 1.1;
+            e.target.style.transform = `translate(${tf.x}px, ${tf.y}px) scale(${tf.scale})`;
+        }
+    }, { passive: false });
+
+    function handleImg(input, key) {
+        const file = input.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) { 
+                images[key] = e.target.result; 
+                imgTransforms[key] = { x: 0, y: 0, scale: 1 }; 
+                updatePreview(); 
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+
+    function addSticker(input) {
+        Array.from(input.files).forEach(file => {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                stickers.push({ id: 'stk-' + Date.now() + Math.random(), src: e.target.result, x: 50, y: 50, w: 100 });
+                updatePreview();
+            };
+            reader.readAsDataURL(file);
+        });
+        input.value = ""; 
+    }
+
+    function addBottomBox() {
+        const id = 'bbox-' + Date.now() + Math.floor(Math.random() * 100);
+        images[id] = 'https://via.placeholder.com/300x300/eee/aaa?text=Photo';
+        imgTransforms[id] = { x: 0, y: 0, scale: 1 };
+        bottomBoxes.push(id);
+
+        const html = `
+            <div class="dynamic-box" id="${id}">
+                <button class="btn-del-box" onclick="removeBottomBox('${id}')">X</button>
+                <div class="input-grp"><label>제목</label><input type="text" class="bb-title" value="상세 제목" oninput="updatePreview()"></div>
+                <div class="input-grp"><label>부제목</label><input type="text" class="bb-sub" value="서브 타이틀" oninput="updatePreview()"></div>
+                <div class="input-grp" style="display:flex; gap:10px; align-items:center;">
+                    <div style="flex:1;"><label>태그 (첫번째는 AU고정)</label><input type="text" class="bb-tags" value="태그1, 태그2, 태그3" oninput="updatePreview()"></div>
+                    <div style="width:80px;"><label>태그 색상</label><input type="color" class="bb-tag-color" value="#008275" oninput="updatePreview()" style="height:35px; padding:0;"></div>
+                </div>
+                <div class="input-grp"><label>내용</label><textarea class="bb-desc" oninput="updatePreview()">상세 내용을 입력하세요.</textarea></div>
+                <div class="input-grp"><label>사진</label><input type="file" accept="image/*" onchange="handleImg(this, '${id}')"></div>
+            </div>`;
+        document.getElementById('bottom-boxes-container').insertAdjacentHTML('beforeend', html);
+        updatePreview();
+    }
+
+    function removeBottomBox(id) {
+        document.getElementById(id).remove();
+        bottomBoxes = bottomBoxes.filter(boxId => boxId !== id);
+        delete images[id];
+        delete imgTransforms[id];
+        updatePreview();
+    }
+
+    // 팝업 닫기 함수
+    function closeWelcomeModal() { document.getElementById('welcomeModal').style.display = 'none'; }
+    function closeResultModal() { document.getElementById('result-modal').style.display = 'none'; document.getElementById('result-img').src = ""; }
+
+    function generateFullHTML() {
+        const mainTitle = document.getElementById('in-main-title').value;
+        const midSub = document.getElementById('in-mid-sub').value;
+        const midDesc = document.getElementById('in-mid-desc').value.replace(/\n/g, '<br>');
+        
+        const a1Color = document.getElementById('in-a1-color').value;
+        const a1Emo = document.getElementById('in-a1-emo').value;
+        const a1Call = document.getElementById('in-a1-call').value;
+        const a2Color = document.getElementById('in-a2-color').value;
+        const a2Emo = document.getElementById('in-a2-emo').value;
+        const a2Call = document.getElementById('in-a2-call').value;
+
+        // html2canvas 버그 해결을 위해 SVG 색상 코드를 URL-safe로 인코딩!
+        const a1ColorEnc = encodeURIComponent(a1Color);
+        const a2ColorEnc = encodeURIComponent(a2Color);
+
+        const tfL = getTransform('imgL');
+        const tfR = getTransform('imgR');
+
+        const lCatchColor = document.getElementById('in-l-catch-color').value;
+        const lTxt = document.getElementById('in-l-txt').value;
+        const lDescColor = document.getElementById('in-l-desc-color').value;
+        const lCatch = document.getElementById('in-l-catch').value;
+        const lName = document.getElementById('in-l-name').value;
+        const lDesc = document.getElementById('in-l-desc').value.replace(/\n/g, '<br>');
+        
+        const rCatchColor = document.getElementById('in-r-catch-color').value;
+        const rTxt = document.getElementById('in-r-txt').value;
+        const rDescColor = document.getElementById('in-r-desc-color').value;
+        const rCatch = document.getElementById('in-r-catch').value;
+        const rName = document.getElementById('in-r-name').value;
+        const rDesc = document.getElementById('in-r-desc').value.replace(/\n/g, '<br>');
+
+        const stickersHtml = stickers.map(stk => 
+            `<img src="${stk.src}" data-stk-id="${stk.id}" class="kxx-sticker" style="position: absolute; left: ${stk.x}%; top: ${stk.y}%; width: ${stk.w}px; transform: translate(-50%, -50%); z-index: 10; filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.15));">`
+        ).join('');
+
+        let bottomBoxesHtml = '';
+        bottomBoxes.forEach(id => {
+            const el = document.getElementById(id);
+            if(!el) return;
+            const title = el.querySelector('.bb-title').value;
+            const sub = el.querySelector('.bb-sub').value;
+            const tags = el.querySelector('.bb-tags').value.split(',').map(t => t.trim()).filter(t => t);
+            const tagColor = el.querySelector('.bb-tag-color').value;
+            const desc = el.querySelector('.bb-desc').value.replace(/\n/g, '<br>');
+            const imgSrc = images[id];
+            const tfB = getTransform(id);
+
+            let tagsHtml = tags.map((t, i) => {
+                let bg = i === 0 ? "rgba(220, 220, 220, 0.6)" : tagColor;
+                let col = i === 0 ? "#555" : "#fff";
+                return `<span style="display: inline-block; padding: 4px 10px; margin: 0 6px 6px 0; font-size: 0.75em; font-weight: bold; color: ${col}; background: ${bg}; border-radius: 4px;">${t}</span>`;
+            }).join('');
+
+            bottomBoxesHtml += `
+            <div class="kxx-bb-wrap" style="display: flex; background: #fff; border: 1px solid #ccc; border-radius: 12px; overflow: hidden; margin-bottom: 20px;">
+                <div class="kxx-bb-img" style="flex: 0 0 30%; min-width: 140px; border-right: 1px solid #ccc; overflow: hidden;">
+                    <img src="${imgSrc}" data-img-id="${id}" class="draggable-img" style="width: 100%; height: 100%; object-fit: cover; transform: translate(${tfB.x}px, ${tfB.y}px) scale(${tfB.scale}); display: block;">
+                </div>
+                <div class="kxx-bb-content" style="flex: 1; padding: 25px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center;">
+                    <div style="font-size: 1.4em; font-weight: 900; color: #333; margin-bottom: 4px;">${title}</div>
+                    <div style="font-size: 0.9em; font-weight: bold; color: #888; margin-bottom: 15px;">${sub}</div>
+                    <div style="margin-bottom: 12px;">${tagsHtml}</div>
+                    <div style="font-size: 0.9em; line-height: 1.6; color: #444;">${desc}</div>
+                </div>
+            </div>`;
+        });
+
+        // 화살표 SVG가 html2canvas에서 위치를 잃지 않도록 img의 data uri로 변경
+        const finalHtml = `
+<div id="capture-card" style="font-family: 'Pretendard', sans-serif; width: 800px; min-width: 800px; margin: 0 auto; color: #333; box-sizing: border-box; background-color: transparent; padding: 30px; position: relative; overflow: hidden;">
+    ${stickersHtml}
+    <div class="kxx-top-wrap" style="display: flex; flex-direction: column; background: #fff; border: 1px solid #ccc; border-radius: 12px; overflow: hidden; margin-bottom: 20px; position: relative; z-index: 1;">
+        
+        <div style="display: flex; width: 100%; border-bottom: 1px solid #ccc; align-items: stretch;">
+            <div style="width: 28%; flex-shrink: 0; box-sizing: border-box; border-right: 1px solid #ccc; overflow: hidden; position: relative; aspect-ratio: 4/5; background: #fff;">
+                <img src="${images.imgL}" data-img-id="imgL" class="draggable-img" style="width: 100%; height: 100%; object-fit: cover; transform: translate(${tfL.x}px, ${tfL.y}px) scale(${tfL.scale}); display: block;">
+            </div>
+            <div style="width: 44%; flex-shrink: 0; box-sizing: border-box; padding: 20px; display: flex; flex-direction: column; justify-content: center; align-items: center; background: #fff;">
+                <div style="font-size: 2.1em; font-weight: 900; color: #333; letter-spacing: 0.5px; text-align: center; margin-bottom: 8px;">${mainTitle}</div>
+                <div style="font-size: 0.9em; font-weight: 500; color: #666; text-align: center; margin-bottom: 25px;">${midSub}</div>
+                
+                <div style="display: flex; flex-direction: column; gap: 15px; width: 100%; max-width: 85%;">
+                    <div style="display: flex; flex-direction: column; text-align: left;">
+                        <div style="font-size: 0.72em; font-weight: bold; color: ${a1Color}; margin-bottom: 3px; padding-left: 5px;">${a1Emo}</div>
+                        <div style="width: 100%; height: 2px; background: ${a1Color}; position: relative;">
+                            <img src="data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='10' viewBox='0 0 8 10'%3E%3Cpolygon points='0,0 8,5 0,10' fill='${a1ColorEnc}'/%3E%3C/svg%3E" style="position: absolute; right: -1px; top: -4px; width: 8px; height: 10px; display: block; border: none; margin: 0; padding: 0;">
+                        </div>
+                        <div style="font-size: 0.72em; font-weight: bold; color: #777; margin-top: 3px; padding-left: 5px;">${a1Call}</div>
+                    </div>
+                    <div style="display: flex; flex-direction: column; text-align: right;">
+                        <div style="font-size: 0.72em; font-weight: bold; color: ${a2Color}; margin-bottom: 3px; padding-right: 5px;">${a2Emo}</div>
+                        <div style="width: 100%; height: 2px; background: ${a2Color}; position: relative;">
+                            <img src="data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='10' viewBox='0 0 8 10'%3E%3Cpolygon points='8,0 0,5 8,10' fill='${a2ColorEnc}'/%3E%3C/svg%3E" style="position: absolute; left: -1px; top: -4px; width: 8px; height: 10px; display: block; border: none; margin: 0; padding: 0;">
+                        </div>
+                        <div style="font-size: 0.72em; font-weight: bold; color: #777; margin-top: 3px; padding-right: 5px;">${a2Call}</div>
+                    </div>
+                </div>
+            </div>
+            <div style="width: 28%; flex-shrink: 0; box-sizing: border-box; border-left: 1px solid #ccc; overflow: hidden; position: relative; aspect-ratio: 4/5; background: #fff;">
+                <img src="${images.imgR}" data-img-id="imgR" class="draggable-img" style="width: 100%; height: 100%; object-fit: cover; transform: translate(${tfR.x}px, ${tfR.y}px) scale(${tfR.scale}); display: block;">
+            </div>
+        </div>
+
+        <div style="display: flex; width: 100%; height: 160px; background: #fff; align-items: stretch;">
+            <div style="width: 28%; flex-shrink: 0; box-sizing: border-box; border-right: 1px solid #ccc; padding: 18px; overflow: hidden;">
+                <div style="font-size: 0.75em; font-weight: bold; color: ${lCatchColor}; margin-bottom: 3px;">${lCatch}</div>
+                <div style="font-size: 1.3em; font-weight: 900; margin-bottom: 10px; color: ${lTxt}; letter-spacing: -0.5px;">${lName}</div>
+                <div style="font-size: 0.85em; line-height: 1.5; color: ${lDescColor}; font-weight: 500;">${lDesc}</div>
+            </div>
+            <div style="width: 44%; flex-shrink: 0; box-sizing: border-box; padding: 20px; overflow: hidden;">
+                <div style="font-size: 0.85em; color: #444; line-height: 1.7; text-align: justify; word-break: keep-all; letter-spacing: -0.2px;">${midDesc}</div>
+            </div>
+            <div style="width: 28%; flex-shrink: 0; box-sizing: border-box; border-left: 1px solid #ccc; padding: 18px; overflow: hidden;">
+                <div style="font-size: 0.75em; font-weight: bold; color: ${rCatchColor}; margin-bottom: 3px;">${rCatch}</div>
+                <div style="font-size: 1.3em; font-weight: 900; margin-bottom: 10px; color: ${rTxt}; letter-spacing: -0.5px;">${rName}</div>
+                <div style="font-size: 0.85em; line-height: 1.5; color: ${rDescColor}; font-weight: 500;">${rDesc}</div>
+            </div>
+        </div>
+    </div>
+    ${bottomBoxesHtml}
+    <div style="margin-top: 15px; text-align: center; font-size: 10px; color: #bbb;">ⓒ 2026. kxxcho. All rights reserved.</div>
+</div>`;
+        return finalHtml;
+    }
+
+    function updatePreview() { document.getElementById('preview-area').innerHTML = generateFullHTML(); }
+    
+    function captureMockup() {
+        const target = document.getElementById('capture-card');
+        const btn = document.querySelector('.btn-download');
+        btn.innerText = "📸 wait...";
+        html2canvas(target, { backgroundColor: null, scale: 3, useCORS: true, allowTaint: true }).then(canvas => {
+            const imgData = canvas.toDataURL('image/png');
+            if (window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+                document.getElementById('result-img').src = imgData;
+                document.getElementById('result-modal').style.display = 'flex';
+            } else {
+                let link = document.createElement('a'); link.download = `kxxcho_relation.png`; link.href = imgData; link.click();
+            }
+            btn.innerText = "📸 이미지로 저장하기";
+        });
+    }
+
+    window.onload = function() { addBottomBox(); updatePreview(); };
+</script>
+</body>
+</html>
