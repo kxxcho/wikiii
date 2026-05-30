@@ -75,7 +75,24 @@
         display: none !important;
     }
   
+  /* 화면이 작을 때(아이프레임 안에서 열릴 때)만 적용되는 컴팩트 스타일 */
+@media (max-width: 500px) {
+  html, body {
+    /* 전체 글자 크기를 80~85% 수준으로 줄여서 오밀조밀하게 만듭니다 */
+    font-size: 14px !important; 
+  }
   
+  /* 화면 양옆의 불필요한 큰 여백(패딩)을 줄여서 공간을 넓게 씁니다 */
+  .container, .main-content, .wiki-content (※ 위키에서 쓰는 본문 클래스명으로 변경 필요) {
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+  }
+  
+  /* 제목 크기도 너무 크지 않게 살짝 줄여줍니다 */
+  h1 { font-size: 1.5em !important; }
+  h2 { font-size: 1.3em !important; }
+  h3 { font-size: 1.1em !important; }
+}
   
 </style>
 <div style="max-width: 500px; margin: 0 auto; box-sizing: border-box;">
